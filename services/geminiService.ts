@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, Type, Schema, Modality, GenerateContentResponse, GenerateContentParameters } from "@google/genai";
 import { 
   PostGeneration, ReelResponse, AdGeneration, 
@@ -675,6 +676,32 @@ export const repurposeContent = async (summary: string, format: string, language
             contents: prompt
         });
         return response.text || "";
+    } catch (e) { throw new Error(safeErrorHandler(e)); }
+};
+
+export const analyzeSEO = async (text: string, file?: {data: string, mimeType: string}, language?: string): Promise<any> => {
+    const prompt = `Perform a comprehensive SEO analysis on the following content.
+    Language: ${language || 'English'}.
+    
+    Return a JSON object with:
+    - score: number (0-100) representing overall SEO quality.
+    - keywords: array of strings (top 5-10 relevant keywords found).
+    - metaDescription: string (a generated optimized meta description max 160 chars).
+    - titleSuggestion: string (an optimized title suggestion).
+    - readability: string (e.g., "Easy", "Moderate", "Hard").
+    - suggestions: array of strings (3-5 actionable tips to improve SEO).`;
+
+    const parts: any[] = [{ text: prompt }];
+    if (text) parts.push({ text: `Content Text: "${text.substring(0, 20000)}"` });
+    if (file) parts.push({ inlineData: { data: file.data, mimeType: file.mimeType } });
+
+    try {
+        const response = await generateContent({
+            model: 'gemini-2.5-flash',
+            contents: { parts },
+            config: { responseMimeType: 'application/json' }
+        });
+        return JSON.parse(cleanJson(response.text || '{}'));
     } catch (e) { throw new Error(safeErrorHandler(e)); }
 };
 

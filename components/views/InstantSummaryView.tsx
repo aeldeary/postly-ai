@@ -3,7 +3,7 @@ import React, { useState, useRef, useContext, useEffect } from 'react';
 import { ProjectContext } from '../../contexts/ProjectContext';
 import * as geminiService from '../../services/geminiService';
 import Button from '../Button';
-import { Loader, DocumentTextIcon, VideoCameraIcon, SparklesIcon, MagicWandIcon } from '../Icons';
+import { Loader, DocumentTextIcon, VideoCameraIcon, SparklesIcon, MagicWandIcon, ChartBarIcon } from '../Icons';
 import CopyButton from '../CopyButton';
 import { ARCHIVE_STORAGE_KEY } from '../../constants';
 import { setItem, getItem, removeItem } from '../../utils/localStorage';
@@ -25,11 +25,15 @@ const InstantSummaryView: React.FC = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [summaryResult, setSummaryResult] = useState<string>('');
     
+    // SEO Analysis State
+    const [isAnalyzingSEO, setIsAnalyzingSEO] = useState(false);
+    const [seoResult, setSeoResult] = useState<any>(null);
+
     // Repurposing
     const [isRepurposing, setIsRepurposing] = useState(false);
     const [repurposedContent, setRepurposedContent] = useState<string>('');
     const [currentPlatformId, setCurrentPlatformId] = useState<string>('');
-    const [activeTab, setActiveTab] = useState<'full_content' | 'social'>('full_content');
+    const [activeTab, setActiveTab] = useState<'full_content' | 'social' | 'seo'>('full_content');
 
     // Check for restored draft
     useEffect(() => {
@@ -107,16 +111,20 @@ const InstantSummaryView: React.FC = () => {
         reader.readAsDataURL(file);
     };
 
-    const handleSummarize = async () => {
+    const validateInput = () => {
         if (inputType === 'text' && !textInput.trim() && !urlInput.trim()) {
             (window as any).toast?.(isAr ? "يرجى إدخال نص أو رابط." : "Please enter text or a URL.", 'error');
-            return;
+            return false;
         }
-        
         if (inputType === 'file' && !fileData) {
             (window as any).toast?.(isAr ? "يرجى رفع ملف." : "Please upload a file.", 'error');
-            return;
+            return false;
         }
+        return true;
+    };
+
+    const handleSummarize = async () => {
+        if (!validateInput()) return;
 
         setIsLoading(true);
         setSummaryResult('');
@@ -162,6 +170,36 @@ const InstantSummaryView: React.FC = () => {
         }
     };
 
+    const handleAnalyzeSEO = async () => {
+        if (!validateInput()) return;
+
+        setIsAnalyzingSEO(true);
+        setSeoResult(null);
+        
+        try {
+            let contentToAnalyze = '';
+            if (inputType === 'text') {
+                if (urlInput.trim()) contentToAnalyze += `Source URL: ${urlInput}\n\n`;
+                if (textInput.trim()) contentToAnalyze += `Text: ${textInput}`;
+            }
+
+            const result = await geminiService.analyzeSEO(
+                contentToAnalyze,
+                inputType === 'file' && fileData ? { data: fileData.data, mimeType: fileData.mimeType } : undefined,
+                isAr ? 'Arabic' : 'English'
+            );
+            
+            setSeoResult(result);
+            setActiveTab('seo');
+            
+        } catch (e: any) {
+            console.error(e);
+            (window as any).toast?.(e.message || "SEO Analysis failed", 'error');
+        } finally {
+            setIsAnalyzingSEO(false);
+        }
+    };
+
     const handleRepurpose = async (format: string) => {
         if (!summaryResult) return;
         
@@ -198,13 +236,13 @@ const InstantSummaryView: React.FC = () => {
                     </div>
                     <div>
                         <h2 className={`text-4xl font-bold mb-2 flex items-center gap-3 ${isLight || isComfort ? 'text-[#3E2723]' : 'text-white'}`}>
-                            {isAr ? 'الملخص الفوري' : 'Instant Summary'}
+                            {isAr ? 'الملخص الفوري & SEO' : 'Instant Summary & SEO'}
                             <span className="text-xs font-bold uppercase tracking-wider bg-white/10 border border-white/10 text-[#bf8339] px-3 py-1 rounded-full">AI 2.0</span>
                         </h2>
                         <p className={`text-lg max-w-2xl font-light ${isLight || isComfort ? 'text-[#5D4037]' : 'text-white/70'}`}>
                             {isAr 
-                                ? 'حول النصوص الطويلة، الفيديوهات، والملفات إلى ملخصات دقيقة ومحتوى جاهز للنشر.' 
-                                : 'Transform long text, videos, and files into precise summaries and publish-ready content.'}
+                                ? 'حول النصوص الطويلة، الفيديوهات، والملفات إلى ملخصات دقيقة، محتوى جاهز، وتحليلات SEO.' 
+                                : 'Transform long text, videos, and files into summaries, publish-ready content, and SEO insights.'}
                         </p>
                     </div>
                 </div>
@@ -317,40 +355,68 @@ const InstantSummaryView: React.FC = () => {
                             </div>
                         )}
 
-                        <Button 
-                            onClick={handleSummarize} 
-                            isLoading={isLoading} 
-                            className={`w-full py-4 text-lg font-bold shadow-xl rounded-xl transition-all duration-300 ${isLight || isComfort ? 'bg-[#bf8339] text-white hover:bg-[#d69545] shadow-[#bf8339]/20' : 'bg-gradient-to-r from-[#bf8339] to-[#d69545] text-[#0a1e3c] shadow-[#bf8339]/20'}`}
-                        >
-                            {isLoading ? (isAr ? 'جاري التحليل...' : 'Analyzing...') : (isAr ? 'تلخيص وتحليل المحتوى' : 'Summarize Content')}
-                        </Button>
+                        <div className="grid grid-cols-2 gap-3">
+                            <Button 
+                                onClick={handleSummarize} 
+                                isLoading={isLoading} 
+                                className={`w-full py-4 text-sm md:text-lg font-bold shadow-xl rounded-xl transition-all duration-300 ${isLight || isComfort ? 'bg-[#bf8339] text-white hover:bg-[#d69545] shadow-[#bf8339]/20' : 'bg-gradient-to-r from-[#bf8339] to-[#d69545] text-[#0a1e3c] shadow-[#bf8339]/20'}`}
+                            >
+                                {isLoading ? (isAr ? 'جاري التحليل...' : 'Analyzing...') : (isAr ? 'تلخيص المحتوى' : 'Summarize Content')}
+                            </Button>
+                            
+                            <Button 
+                                onClick={handleAnalyzeSEO} 
+                                isLoading={isAnalyzingSEO}
+                                variant="secondary" 
+                                className={`w-full py-4 text-sm md:text-lg font-bold shadow-xl rounded-xl transition-all duration-300 flex items-center justify-center gap-2 ${isLight || isComfort ? 'border-[#bf8339] text-[#bf8339] hover:bg-[#bf8339]/10' : ''}`}
+                            >
+                                {isAnalyzingSEO ? (
+                                    <Loader />
+                                ) : (
+                                    <>
+                                        <ChartBarIcon className="w-5 h-5" />
+                                        {isAr ? 'تحليل SEO' : 'Analyze SEO'}
+                                    </>
+                                )}
+                            </Button>
+                        </div>
                     </div>
                 </div>
 
                 {/* RIGHT: RESULT SECTION */}
                 <div className="lg:col-span-7">
-                    {summaryResult ? (
+                    {(summaryResult || seoResult) ? (
                         <div className={`backdrop-blur-xl border rounded-3xl p-8 shadow-2xl relative overflow-hidden animate-slide-up ${isLight ? 'bg-white border-gray-200' : isComfort ? 'bg-[#FFFCF8] border-[#D7CCC8]' : 'bg-[#0a1e3c]/80 border-white/10'}`}>
                             
                             {/* Tabs */}
-                            <div className="flex border-b border-white/10 mb-6 relative z-10">
+                            <div className="flex border-b border-white/10 mb-6 relative z-10 overflow-x-auto">
                                 <button
                                     onClick={() => setActiveTab('full_content')}
-                                    className={`pb-3 px-4 text-sm font-bold transition-colors relative ${activeTab === 'full_content' ? 'text-[#bf8339]' : (isLight || isComfort ? 'text-gray-500 hover:text-gray-900' : 'text-white/50 hover:text-white')}`}
+                                    disabled={!summaryResult}
+                                    className={`pb-3 px-4 text-sm font-bold transition-colors relative whitespace-nowrap ${activeTab === 'full_content' ? 'text-[#bf8339]' : (!summaryResult ? 'opacity-30 cursor-not-allowed' : (isLight || isComfort ? 'text-gray-500 hover:text-gray-900' : 'text-white/50 hover:text-white'))}`}
                                 >
                                     {isAr ? 'الملخص الشامل' : 'Full Summary'}
                                     {activeTab === 'full_content' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-[#bf8339]"></div>}
                                 </button>
                                 <button
                                     onClick={() => setActiveTab('social')}
-                                    className={`pb-3 px-4 text-sm font-bold transition-colors relative ${activeTab === 'social' ? 'text-[#bf8339]' : (isLight || isComfort ? 'text-gray-500 hover:text-gray-900' : 'text-white/50 hover:text-white')}`}
+                                    disabled={!summaryResult}
+                                    className={`pb-3 px-4 text-sm font-bold transition-colors relative whitespace-nowrap ${activeTab === 'social' ? 'text-[#bf8339]' : (!summaryResult ? 'opacity-30 cursor-not-allowed' : (isLight || isComfort ? 'text-gray-500 hover:text-gray-900' : 'text-white/50 hover:text-white'))}`}
                                 >
                                     {isAr ? 'إعادة التدوير (Social)' : 'Repurpose (Social)'}
                                     {activeTab === 'social' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-[#bf8339]"></div>}
                                 </button>
+                                <button
+                                    onClick={() => setActiveTab('seo')}
+                                    disabled={!seoResult}
+                                    className={`pb-3 px-4 text-sm font-bold transition-colors relative whitespace-nowrap ${activeTab === 'seo' ? 'text-[#bf8339]' : (!seoResult ? 'opacity-30 cursor-not-allowed' : (isLight || isComfort ? 'text-gray-500 hover:text-gray-900' : 'text-white/50 hover:text-white'))}`}
+                                >
+                                    {isAr ? 'تحليل SEO' : 'SEO Analysis'}
+                                    {activeTab === 'seo' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-[#bf8339]"></div>}
+                                </button>
                             </div>
 
-                            {activeTab === 'full_content' && (
+                            {activeTab === 'full_content' && summaryResult && (
                                 <div className="animate-fade-in relative z-10">
                                     <div className="flex justify-end mb-4">
                                         <CopyButton text={summaryResult} label={isAr ? "نسخ الملخص" : "Copy Summary"} />
@@ -362,7 +428,7 @@ const InstantSummaryView: React.FC = () => {
                                 </div>
                             )}
 
-                            {activeTab === 'social' && (
+                            {activeTab === 'social' && summaryResult && (
                                 <div className="animate-fade-in relative z-10">
                                     <div className="mb-6">
                                         <h3 className={`text-sm font-bold uppercase tracking-wider mb-3 ${isLight || isComfort ? 'text-[#5D4037]' : 'text-white/60'}`}>{isAr ? 'اختر منصة للتحويل إليها' : 'Choose Platform to Repurpose'}</h3>
@@ -407,6 +473,66 @@ const InstantSummaryView: React.FC = () => {
                                             <p className="text-sm">{isAr ? 'اختر منصة أعلاه لتوليد المحتوى' : 'Select a platform above to generate content'}</p>
                                         </div>
                                     )}
+                                </div>
+                            )}
+
+                            {activeTab === 'seo' && seoResult && (
+                                <div className="animate-fade-in relative z-10 space-y-6">
+                                    {/* Score & Readability */}
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className={`p-4 rounded-xl border text-center ${isLight || isComfort ? 'bg-white border-gray-200' : 'bg-white/5 border-white/10'}`}>
+                                            <div className="text-xs text-[#bf8339] uppercase font-bold mb-2">{isAr ? 'نقاط SEO' : 'SEO Score'}</div>
+                                            <div className={`text-4xl font-black ${seoResult.score >= 80 ? 'text-green-500' : seoResult.score >= 50 ? 'text-yellow-500' : 'text-red-500'}`}>
+                                                {seoResult.score}/100
+                                            </div>
+                                        </div>
+                                        <div className={`p-4 rounded-xl border text-center ${isLight || isComfort ? 'bg-white border-gray-200' : 'bg-white/5 border-white/10'}`}>
+                                            <div className="text-xs text-[#bf8339] uppercase font-bold mb-2">{isAr ? 'قابلية القراءة' : 'Readability'}</div>
+                                            <div className={`text-2xl font-bold ${isLight || isComfort ? 'text-gray-800' : 'text-white'}`}>
+                                                {seoResult.readability}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Meta Tags */}
+                                    <div className={`p-5 rounded-xl border ${isLight || isComfort ? 'bg-white border-gray-200' : 'bg-white/5 border-white/10'}`}>
+                                        <div className="flex justify-between items-center mb-2">
+                                            <h4 className={`text-sm font-bold ${isLight || isComfort ? 'text-gray-800' : 'text-white'}`}>{isAr ? 'عنوان مقترح (Title Tag)' : 'Title Suggestion'}</h4>
+                                            <CopyButton text={seoResult.titleSuggestion} />
+                                        </div>
+                                        <p className={`text-sm mb-4 pb-4 border-b ${isLight || isComfort ? 'text-gray-600 border-gray-100' : 'text-white/80 border-white/10'}`}>{seoResult.titleSuggestion}</p>
+                                        
+                                        <div className="flex justify-between items-center mb-2">
+                                            <h4 className={`text-sm font-bold ${isLight || isComfort ? 'text-gray-800' : 'text-white'}`}>{isAr ? 'وصف الميتا (Meta Description)' : 'Meta Description'}</h4>
+                                            <CopyButton text={seoResult.metaDescription} />
+                                        </div>
+                                        <p className={`text-sm ${isLight || isComfort ? 'text-gray-600' : 'text-white/80'}`}>{seoResult.metaDescription}</p>
+                                    </div>
+
+                                    {/* Keywords */}
+                                    <div>
+                                        <h4 className={`text-sm font-bold mb-3 uppercase tracking-wider ${isLight || isComfort ? 'text-gray-500' : 'text-white/50'}`}>{isAr ? 'الكلمات المفتاحية المستخرجة' : 'Keywords Detected'}</h4>
+                                        <div className="flex flex-wrap gap-2">
+                                            {seoResult.keywords?.map((kw: string, i: number) => (
+                                                <span key={i} className="bg-[#bf8339]/10 text-[#bf8339] px-3 py-1 rounded-full text-xs font-bold border border-[#bf8339]/20">
+                                                    #{kw}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Suggestions */}
+                                    <div>
+                                        <h4 className={`text-sm font-bold mb-3 uppercase tracking-wider ${isLight || isComfort ? 'text-gray-500' : 'text-white/50'}`}>{isAr ? 'توصيات التحسين' : 'Improvement Suggestions'}</h4>
+                                        <ul className="space-y-2">
+                                            {seoResult.suggestions?.map((s: string, i: number) => (
+                                                <li key={i} className={`text-sm flex items-start gap-2 ${isLight || isComfort ? 'text-gray-700' : 'text-white/80'}`}>
+                                                    <span className="text-[#bf8339] mt-1">✓</span>
+                                                    {s}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
                                 </div>
                             )}
                         </div>
