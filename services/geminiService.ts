@@ -13,7 +13,6 @@ const cleanJson = (text: string): string => {
 const SAFETY_MESSAGE = "عذراً، لم يتم تنفيذ طلبك لأنه يحتوي على محتوى مخالف للآداب العامة وسياسات الاستخدام";
 
 const safeErrorHandler = (error: any): string => {
-    // ... existing error handler content
     console.error("Gemini API Error:", error);
     const msg = error.message || String(error);
 
@@ -38,7 +37,6 @@ const safeErrorHandler = (error: any): string => {
 
 // --- Retry Logic for Stability ---
 const retry = async <T>(fn: () => Promise<T>, retries = 3, delay = 2000): Promise<T> => {
-    // ... existing retry logic
     try {
         return await fn();
     } catch (err: any) {
@@ -50,8 +48,6 @@ const retry = async <T>(fn: () => Promise<T>, retries = 3, delay = 2000): Promis
             err.status === 500 || 
             err.status === 'INTERNAL';
             
-        // Do not retry if it's a client error (4xx) or safety block, unless it's a rate limit (429) which we might want to wait for, 
-        // but typically 429 needs longer wait. We focus on 500s here.
         if (retries > 0 && isInternal) {
             console.warn(`[Gemini Service] Internal Error (500). Retrying in ${delay}ms... (${retries} attempts left)`);
             await new Promise(res => setTimeout(res, delay));
@@ -68,7 +64,6 @@ const generateVideosWrapper = (params: any) => retry(() => ai.models.generateVid
 // --- Text Generation Functions ---
 
 export const generatePost = async (topic: string, dialect: string, language: string, industry: string, tone: string, useUserStyle: boolean): Promise<PostGeneration[]> => {
-    // ... existing generatePost logic
     const prompt = `Generate 4 variations of social media posts about "${topic}".
     Language: ${language}, Dialect: ${dialect}.
     Industry: ${industry}, Tone: ${tone}.
@@ -146,7 +141,6 @@ export const generateAdvancedReelScript = async (
 };
 
 export const generateAd = async (topic: string, platform: string, tone: string, language: string, dialect: string): Promise<AdGeneration[]> => {
-    // ... existing generateAd logic
     const prompt = `Generate 4 ad variations for ${platform} about "${topic}".
     Language: ${language}, Dialect: ${dialect}, Tone: ${tone}.
     Return JSON array: { platform, primaryText, headline, description, cta, targeting }.`;
@@ -201,44 +195,42 @@ export const generateSingleImagePrompt = async (topic: string, language: string)
 };
 
 export const generateWebsiteContent = async (topic: string, language: string, industry: string, tone: string): Promise<WebsiteGeneration[]> => {
+    // UPDATED PROMPT FOR HUMAN-LIKE, EXPERT, AND CREATIVE OUTPUT
     const prompt = `
-    You are a Senior Creative Copywriter and Editor-in-Chief with over 20 years of experience in high-end publishing, branding, and digital storytelling.
-    Your writing style is distinguished by its human touch, flow, eloquence, and complete lack of "robotic" or "AI-generated" feel. You write with soul, authority, and creativity.
+    Role: You are a Senior Creative Copywriter and Editor-in-Chief with 25+ years of experience in high-end branding, digital storytelling, and persuasion psychology. You have written for top global brands and won awards for your engaging, human-centric copy.
 
-    **Task:** Generate 2 distinct versions of website content for the topic: "${topic}".
-    
+    Task: Write exceptional website content for the topic: "${topic}".
+
     **Context:**
     - Industry: ${industry}
-    - Tone: ${tone}
-    - Language: ${language} (Strictly adhere to this language. If Arabic, use eloquent, modern, yet rich Arabic phrasing. Avoid literal translations, avoid repeated sentence structures, and avoid "robot" words).
+    - Tone: ${tone} (Adjust your voice perfectly to match this).
+    - Language: ${language} (CRITICAL: If Arabic, use eloquent, fluid, modern Arabic. Avoid "Google Translate" style. Use rich vocabulary, emotional resonance, and correct grammar).
 
-    **Writing Guidelines (CRITICAL):**
-    1. **Be Human:** Use varied sentence structures, rhetorical devices, and emotional hooks. Avoid repetitive patterns.
-    2. **Be Expert:** Sound like someone who deeply understands the subject matter and the audience's pain points.
-    3. **Show, Don't Just Tell:** Use descriptive language that paints a picture rather than just listing features.
-    4. **No Fluff:** Every word must earn its place. Be concise but impactful.
-    5. **Avoid AI Patterns:** Do not use phrases like "In today's world", "Unlock your potential", or generic openers. Start with a hook.
+    **Strict Writing Rules (The "Human" Filter):**
+    1. **NO AI CLICHÉS:** Banish phrases like "In today's digital world," "Unlock your potential," "We are a leading company," "Meticulously crafted," "Seamlessly integrated," "Elevate your business." These are robotic.
+    2. **Start Strong:** The first sentence must be a hook. A question, a bold statement, or a vivid scene. Never start with a definition.
+    3. **Show, Don't Tell:** Instead of saying "We are professional," describe *how* you work. Instead of "High quality," describe the texture or the result.
+    4. **Be Conversational yet Authoritative:** Write *to* the reader (Use "You"), not *at* them. Empathize with their pain points.
+    5. **Sentence Variety:** Mix short, punchy sentences with longer, flowing ones. This creates rhythm.
 
-    **Version 1 Strategy (The Authority):** Grounded, trustworthy, professional, and deeply reassuring. Focus on expertise and tangible results.
-    **Version 2 Strategy (The Visionary):** Inspiring, bold, creative, and evocative. Focus on the "why", the feeling, and the future transformation.
+    **Versions Required:**
+    1. **Version 1 (The Storyteller):** Focus on the narrative, the "Why," and the emotional transformation. Use metaphors and evocative language.
+    2. **Version 2 (The Strategist):** Focus on clarity, direct benefits, authority, and trust. Crisp, confident, and results-oriented.
 
-    **Output Structure Requirements:**
-    1. **Relevance**: Strictly based on "${topic}". If unsure, generate high-quality generic content for "${industry}".
-    2. **Length**: Main body text must be substantial (approx 7-10 lines), broken into readable chunks.
-    3. **SEO**: Integrate 8-12 high-value keywords naturally.
-    4. **Meta Description**: 130-160 chars, click-worthy.
-    5. **HTML Structure**:
-       - <h2>Subtitle</h2> (Engaging and catchy)
-       - <p>Main Body Text</p> (The core content)
-       - <div class="cta"><strong>Call to Action</strong></div>
+    **Structure for Each Version:**
+    - **Headline:** Catchy, benefit-driven, max 8 words.
+    - **Sub-headline:** Explains the promise clearly.
+    - **Introduction:** Captures attention immediately.
+    - **Body Content:** Substantial, detailed paragraphs (3-4 paragraphs). Not just bullet points. Flow logically.
+    - **Call to Action:** Compelling and urgent.
 
     **Output JSON Format**:
     [
       {
         "version": 1,
-        "metaDescription": "...",
-        "seoKeywords": ["..."],
-        "pageContent": "<h2>...</h2><p>...</p>..."
+        "metaDescription": "Click-worthy summary (150 chars).",
+        "seoKeywords": ["keyword1", "keyword2", ...],
+        "pageContent": "<h2>[Headline]</h2><p class='lead'>[Sub-headline]</p><p>[Body Paragraph 1...]</p><h3>[Section Header]</h3><p>[Body Paragraph 2...]</p>..."
       },
       {
         "version": 2,

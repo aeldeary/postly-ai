@@ -1,3 +1,4 @@
+
 import React, { useState, useContext, useMemo, useEffect } from 'react';
 import { ProjectContext } from '../../contexts/ProjectContext';
 import Button from '../Button';
@@ -78,23 +79,46 @@ const WebsiteContentView: React.FC = () => {
   const copyAll = (generation: WebsiteGeneration) => {
     const keywords = getKeywordsString(generation.seoKeywords);
     
-    // Strict Plain Text Cleanup Logic
-    let contentText = generation.pageContent
-        // Replace block element endings with double newlines for paragraph separation
-        .replace(/<\/(p|div|h[1-6]|ul|ol|article|section|blockquote)>/gi, '\n\n')
+    // STRICT PLAIN TEXT CLEANUP LOGIC
+    let contentText = generation.pageContent || '';
+
+    // 1. Convert structural tags to newlines for readability
+    contentText = contentText
+        // Replace block-level closing tags with double newlines
+        .replace(/<\/(p|div|h[1-6]|article|section|blockquote)>/gi, '\n\n')
         // Replace breaks with single newline
         .replace(/<br\s*\/?>/gi, '\n')
-        // Replace list item starts with a bullet point
-        .replace(/<li[^>]*>/gi, '• ')
-        // Strip ALL remaining HTML tags
-        .replace(/<[^>]+>/g, '')
-        // Decode common HTML entities (basic)
-        .replace(/&nbsp;/g, ' ')
-        .replace(/&amp;/g, '&')
-        .replace(/&lt;/g, '<')
-        .replace(/&gt;/g, '>')
-        .replace(/&quot;/g, '"')
-        // Collapse multiple newlines into max 2
+        // Replace list items with bullet points
+        .replace(/<li[^>]*>/gi, '• ');
+
+    // 2. Strip ALL HTML tags
+    contentText = contentText.replace(/<[^>]+>/g, '');
+
+    // 3. Decode HTML entities (Essential for clean text)
+    const decodeEntities = (str: string) => {
+        const textarea = document.createElement('textarea');
+        textarea.innerHTML = str;
+        return textarea.value;
+    };
+    // Safe decode if running in browser
+    if (typeof document !== 'undefined') {
+        contentText = decodeEntities(contentText);
+    } else {
+        // Fallback basic replacements if SS environment (rare for this app)
+        contentText = contentText
+            .replace(/&nbsp;/g, ' ')
+            .replace(/&amp;/g, '&')
+            .replace(/&lt;/g, '<')
+            .replace(/&gt;/g, '>')
+            .replace(/&quot;/g, '"')
+            .replace(/&#39;/g, "'");
+    }
+
+    // 4. Cleanup whitespace
+    contentText = contentText
+        // Remove multiple spaces
+        .replace(/[ \t]+/g, ' ')
+        // Limit to max 2 consecutive newlines
         .replace(/\n\s*\n\s*\n/g, '\n\n')
         .trim();
 
