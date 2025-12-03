@@ -434,6 +434,7 @@ const GraphicDesignerView: React.FC = () => {
                 ctx.fillStyle = isDarkText ? "#ffffff" : "#1a1a1a";
                 
                 ctx.beginPath();
+                // @ts-ignore
                 if (ctx.roundRect) ctx.roundRect(boxX, bgY, boxWidth, boxHeight, 15 * scaleFactor);
                 else ctx.rect(boxX, bgY, boxWidth, boxHeight);
                 ctx.fill();
@@ -445,12 +446,15 @@ const GraphicDesignerView: React.FC = () => {
                 ctx.fillStyle = showLabelColor ? labelColor : "#bf8339";
                 ctx.beginPath();
                 if (boxAnchorAlign === 'left') {
+                     // @ts-ignore
                      if (ctx.roundRect) ctx.roundRect(boxX, bgY, stripWidth, boxHeight, [15*scaleFactor, 0, 0, 15*scaleFactor]);
                      else ctx.fillRect(boxX, bgY, stripWidth, boxHeight);
                 } else if (boxAnchorAlign === 'right') {
+                     // @ts-ignore
                      if (ctx.roundRect) ctx.roundRect(boxX + boxWidth - stripWidth, bgY, stripWidth, boxHeight, [0, 15*scaleFactor, 15*scaleFactor, 0]);
                      else ctx.fillRect(boxX + boxWidth - stripWidth, bgY, stripWidth, boxHeight);
                 } else {
+                     // @ts-ignore
                      if (ctx.roundRect) ctx.roundRect(boxX, bgY, boxWidth, stripWidth, [15*scaleFactor, 15*scaleFactor, 0, 0]);
                      else ctx.fillRect(boxX, bgY, boxWidth, stripWidth);
                 }
@@ -470,6 +474,7 @@ const GraphicDesignerView: React.FC = () => {
                 if (boxAnchorAlign === 'center') {
                      ctx.fillRect(boxX + (boxWidth*0.2), bgY + boxHeight - 5, boxWidth * 0.6, 5 * scaleFactor);
                 } else {
+                     // @ts-ignore
                      if (ctx.roundRect) ctx.roundRect(lineX, bgY, stripWidth, boxHeight, 5*scaleFactor);
                      else ctx.fillRect(lineX, bgY, stripWidth, boxHeight);
                 }
