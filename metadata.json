@@ -1,0 +1,7 @@
+{
+  "name": "Postly-AI",
+  "description": "Postly-AI is an advanced content creation platform powered by Gemini API. It generates social media posts, website content, captions, SEO text, AI images, creative ideas, and also learns the user’s writing style.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}

@@ -1,0 +1,403 @@
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0a1e3c">
+  <title>Postly-AI - صانع المحتوى الاحترافي</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Almarai:wght@300;400;700;800&family=Cairo:wght@200..1000&family=Changa:wght@200..800&family=El+Messiri:wght@400..700&family=Lalezar&family=Lateef:wght@200;300;400;500;600;700;800&family=Lemonada:wght@300..700&family=Mada:wght@200..900&family=Reem+Kufi:wght@400..700&family=Tajawal:wght@200;300;400;500;700;800;900&family=Amiri:wght@400;700&family=Noto+Kufi+Arabic:wght@100..900&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Tajawal', sans-serif;
+      transition: background-color 0.3s, color 0.3s;
+      /* Default Dark Mode (Navy) */
+      background-color: #0a1e3c;
+      color: #ffffff;
+      overscroll-behavior-y: none; /* Prevent pull-to-refresh on mobile */
+    }
+    
+    /* Scrollbar styling */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(0,0,0,0.2); 
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #bf8339; 
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #a66e2c; 
+    }
+
+    /* Unified Dropdown/Accordion Styles */
+    .dropdown-section-header, .accordion-header {
+      background-color: #2e4f8a;
+      color: #ffffff;
+      font-weight: 700;
+      padding: 12px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-bottom: 4px;
+      margin-top: 4px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 14px;
+      transition: all 0.2s;
+      border: 1px solid rgba(255,255,255,0.1);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    
+    .dropdown-section-header:hover, .accordion-header:hover {
+        background-color: #3d63a8;
+        border-color: rgba(255,255,255,0.3);
+        transform: translateY(-1px);
+    }
+
+    .accordion-section {
+        margin-bottom: 6px;
+    }
+
+    .dropdown-item, .accordion-item {
+       padding: 10px 16px;
+       cursor: pointer;
+       transition: all 0.2s;
+       color: rgba(255,255,255,0.9);
+       font-size: 13px;
+       border-bottom: 1px solid rgba(255,255,255,0.05);
+       background-color: transparent;
+       display: flex;
+       align-items: center;
+    }
+    
+    .dropdown-item:last-child, .accordion-item:last-child {
+        border-bottom: none;
+    }
+
+    .dropdown-item:hover, .accordion-item:hover {
+       background-color: rgba(191, 131, 57, 0.15);
+       color: #bf8339;
+       padding-right: 20px;
+    }
+
+    .dropdown-item.selected, .accordion-item.selected {
+       background-color: rgba(191, 131, 57, 0.25);
+       color: #bf8339;
+       font-weight: bold;
+       border-right: 3px solid #bf8339;
+    }
+    
+    .accordion-content {
+        background-color: rgba(0,0,0,0.2);
+        border-radius: 0 0 8px 8px;
+        margin-top: -5px;
+        margin-bottom: 8px;
+        padding: 4px 0;
+        border-left: 1px solid rgba(255,255,255,0.05);
+        border-right: 1px solid rgba(255,255,255,0.05);
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+        overflow: hidden;
+        animation: slideDown 0.2s ease-out;
+    }
+
+    @keyframes slideDown {
+        from { opacity: 0; transform: translateY(-5px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* =========================================
+       THEME ENGINE: OVERRIDES
+       ========================================= */
+    
+    /* --- 1. LIGHT MODE (Corporate Clean) --- */
+    body.light-mode {
+      background-color: #f3f6f8 !important; /* Soft Blue-Gray White */
+      color: #1f2937 !important; /* Gray 800 */
+    }
+    
+    /* Force Navy Color for Main Headings in Light Mode */
+    body.light-mode h1, 
+    body.light-mode h2, 
+    body.light-mode h3, 
+    body.light-mode h4,
+    body.light-mode h5, 
+    body.light-mode h6,
+    body.light-mode h1[class*="text-"],
+    body.light-mode h2[class*="text-"],
+    body.light-mode h3[class*="text-"],
+    body.light-mode h4[class*="text-"] {
+        color: #0a1e3c !important;
+    }
+
+    /* Text Color Inversion */
+    body.light-mode .text-white { color: #111827 !important; }
+    body.light-mode .text-white\/90 { color: #1f2937 !important; }
+    body.light-mode .text-white\/80 { color: #374151 !important; }
+    body.light-mode .text-white\/70 { color: #4b5563 !important; }
+    body.light-mode .text-white\/60 { color: #6b7280 !important; }
+    body.light-mode .text-white\/50 { color: #9ca3af !important; }
+    body.light-mode .text-white\/40 { color: #cbd5e1 !important; }
+    body.light-mode .text-white\/30 { color: #e5e7eb !important; }
+
+    /* Container Backgrounds */
+    body.light-mode .bg-\[\#0a1e3c\], 
+    body.light-mode .bg-\[\#0a1e3c\]\/60,
+    body.light-mode .bg-\[\#0a1e3c\]\/80,
+    body.light-mode .bg-\[\#0a1e3c\]\/40,
+    body.light-mode .bg-\[\#0a1e3c\]\/20,
+    body.light-mode .bg-white\/5,
+    body.light-mode .bg-white\/10,
+    body.light-mode .bg-black\/10,
+    body.light-mode .bg-black\/20,
+    body.light-mode .bg-black\/30,
+    body.light-mode .bg-black\/40 {
+        background-color: #ffffff !important;
+        border: 1px solid #e5e7eb !important;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03) !important;
+        backdrop-filter: none !important;
+        color: #1f2937 !important;
+    }
+
+    /* Inputs */
+    body.light-mode input[type="text"],
+    body.light-mode input[type="number"],
+    body.light-mode textarea,
+    body.light-mode select,
+    body.light-mode .bg-black\/20 input {
+        background-color: #f9fafb !important;
+        border: 1px solid #d1d5db !important;
+        color: #111827 !important;
+        box-shadow: inset 0 1px 2px rgba(0,0,0,0.05) !important;
+    }
+    
+    body.light-mode input::placeholder,
+    body.light-mode textarea::placeholder {
+        color: #9ca3af !important;
+    }
+
+    /* Sidebar */
+    body.light-mode aside {
+        background-color: #ffffff !important;
+        border-right: 1px solid #e5e7eb !important;
+        border-left: 1px solid #e5e7eb !important;
+        box-shadow: 0 0 15px rgba(0,0,0,0.03) !important;
+    }
+
+    body.light-mode .border-white\/10,
+    body.light-mode .border-white\/20,
+    body.light-mode .border-white\/5 {
+        border-color: #e5e7eb !important;
+    }
+
+    body.light-mode .bg-\[\#bf8339\] {
+        background-color: #d97706 !important;
+        color: white !important;
+    }
+    body.light-mode .text-\[\#bf8339\] {
+        color: #b45309 !important;
+    }
+    body.light-mode .border-\[\#bf8339\] {
+        border-color: #d97706 !important;
+    }
+    
+    body.light-mode .hover\:bg-white\/10:hover,
+    body.light-mode .hover\:bg-white\/5:hover {
+        background-color: #f3f4f6 !important;
+    }
+
+    body.light-mode .accordion-header, 
+    body.light-mode .dropdown-section-header {
+        background-color: #f8fafc !important;
+        color: #0f172a !important;
+        border: 1px solid #e2e8f0 !important;
+    }
+    body.light-mode .accordion-content {
+        background-color: #ffffff !important;
+        border: 1px solid #e2e8f0 !important;
+    }
+    body.light-mode .dropdown-item:hover, 
+    body.light-mode .accordion-item:hover {
+        background-color: #fffbeb !important;
+        color: #b45309 !important;
+    }
+    body.light-mode .dropdown-item, 
+    body.light-mode .accordion-item {
+        color: #4b5563 !important;
+        border-bottom-color: #f3f4f6 !important;
+    }
+    body.light-mode svg.text-white {
+        color: #475569 !important;
+    }
+
+
+    /* --- 2. COMFORT MODE (Refined Beige & High Contrast) --- */
+    body.comfort-mode {
+      background-color: #F0EAD6 !important; /* Eggshell / Parchment */
+      color: #3E2723 !important; /* Deep Coffee Brown */
+    }
+    
+    /* Text Overrides - Ensure high contrast against beige */
+    body.comfort-mode .text-white { color: #3E2723 !important; }
+    body.comfort-mode .text-white\/90 { color: #4E342E !important; }
+    body.comfort-mode .text-white\/80 { color: #5D4037 !important; }
+    body.comfort-mode .text-white\/70 { color: #6D4C41 !important; }
+    body.comfort-mode .text-white\/60 { color: #795548 !important; }
+    body.comfort-mode .text-white\/50 { color: #8D6E63 !important; }
+    body.comfort-mode .text-white\/40 { color: #A1887F !important; }
+    body.comfort-mode .text-white\/30 { color: #BCAAA4 !important; }
+
+    /* Main Card Containers - Creamy White with Warm Borders */
+    body.comfort-mode .bg-\[\#0a1e3c\], 
+    body.comfort-mode .bg-\[\#0a1e3c\]\/60,
+    body.comfort-mode .bg-\[\#0a1e3c\]\/80,
+    body.comfort-mode .bg-\[\#0a1e3c\]\/90,
+    body.comfort-mode .bg-\[\#0a1e3c\]\/95,
+    body.comfort-mode .bg-\[\#0a1e3c\]\/40, 
+    body.comfort-mode .bg-\[\#0a1e3c\]\/20 {
+        background-color: #FFFCF8 !important; /* Warm White */
+        border: 1px solid #D7CCC8 !important; /* Soft Brown Border */
+        color: #3E2723 !important;
+        box-shadow: 0 4px 10px rgba(62, 39, 35, 0.05) !important;
+        backdrop-filter: none !important;
+    }
+
+    /* Inner Input Containers - Slightly Darker Beige to differentiate from Card */
+    body.comfort-mode .bg-white\/5,
+    body.comfort-mode .bg-white\/10,
+    body.comfort-mode .bg-black\/10,
+    body.comfort-mode .bg-black\/20,
+    body.comfort-mode .bg-black\/30,
+    body.comfort-mode .bg-black\/40 {
+        background-color: #F5F1E6 !important; /* Linen */
+        border: 1px solid #E0D4C5 !important;
+        color: #3E2723 !important;
+    }
+    
+    /* Form Inputs */
+    body.comfort-mode input,
+    body.comfort-mode textarea,
+    body.comfort-mode select {
+        background-color: #FFFFFF !important;
+        border: 1px solid #BCAAA4 !important;
+        color: #3E2723 !important;
+        box-shadow: inset 0 1px 3px rgba(62, 39, 35, 0.05) !important;
+    }
+    body.comfort-mode input::placeholder, 
+    body.comfort-mode textarea::placeholder {
+        color: #A1887F !important;
+    }
+
+    /* Headings */
+    body.comfort-mode h1, 
+    body.comfort-mode h2, 
+    body.comfort-mode h3, 
+    body.comfort-mode h4, 
+    body.comfort-mode h5 {
+        color: #3E2723 !important; /* Darkest Brown */
+    }
+
+    /* Brand Accents - Earthy Tones */
+    body.comfort-mode .text-\[\#bf8339\] { 
+        color: #9C6F28 !important; /* Darker Bronze for text readability */ 
+    }
+    body.comfort-mode .bg-\[\#bf8339\] {
+        background-color: #C19A6B !important; /* Camel/Lion Color */
+        color: #ffffff !important;
+    }
+    body.comfort-mode .border-\[\#bf8339\] {
+        border-color: #C19A6B !important;
+    }
+    
+    /* Primary Buttons - Need high contrast */
+    body.comfort-mode button.bg-\[\#bf8339\] {
+        background-color: #8D6E63 !important; /* Warm Cocoa */
+        color: #FFFFFF !important;
+        box-shadow: 0 4px 6px rgba(141, 110, 99, 0.3) !important;
+    }
+    body.comfort-mode button.bg-\[\#bf8339\]:hover {
+        background-color: #795548 !important;
+    }
+
+    /* Sidebar */
+    body.comfort-mode aside {
+        background-color: #F9F7F2 !important;
+        border-right: 1px solid #D7CCC8 !important;
+        border-left: 1px solid #D7CCC8 !important;
+        box-shadow: 0 0 15px rgba(62, 39, 35, 0.03) !important;
+    }
+    
+    /* Icons */
+    body.comfort-mode svg.text-white {
+        color: #5D4037 !important;
+    }
+    body.comfort-mode svg.text-\[\#bf8339\] {
+        color: #9C6F28 !important;
+    }
+
+    /* Dropdowns/Accordions in Comfort */
+    body.comfort-mode .accordion-header, 
+    body.comfort-mode .dropdown-section-header {
+        background-color: #EFEBE0 !important;
+        color: #3E2723 !important;
+        border: 1px solid #D7CCC8 !important;
+    }
+    body.comfort-mode .accordion-content {
+        background-color: #FFFCF8 !important;
+        border: 1px solid #D7CCC8 !important;
+    }
+    body.comfort-mode .dropdown-item:hover, 
+    body.comfort-mode .accordion-item:hover {
+        background-color: #E0D4C5 !important;
+        color: #8D6E63 !important;
+    }
+    body.comfort-mode .dropdown-item, 
+    body.comfort-mode .accordion-item {
+        color: #5D4037 !important;
+        border-bottom-color: #F0EAD6 !important;
+    }
+    
+    /* Hover states */
+    body.comfort-mode .hover\:bg-white\/10:hover,
+    body.comfort-mode .hover\:bg-white\/5:hover {
+        background-color: #EFEBE0 !important;
+    }
+    
+    /* Specific Border Overrides */
+    body.comfort-mode .border-white\/10,
+    body.comfort-mode .border-white\/20,
+    body.comfort-mode .border-white\/5 {
+        border-color: #D7CCC8 !important;
+    }
+
+  </style>
+<script type="importmap">
+{
+  "imports": {
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0",
+    "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.1.1",
+    "vite": "https://aistudiocdn.com/vite@^7.2.2",
+    "react-dom": "https://aistudiocdn.com/react-dom@^19.2.0",
+    "jspdf": "https://esm.sh/jspdf@2.5.1",
+    "html2canvas": "https://esm.sh/html2canvas@1.4.1"
+  }
+}
+</script>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+</html>
