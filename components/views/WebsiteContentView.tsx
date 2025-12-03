@@ -1,4 +1,3 @@
-
 import React, { useState, useContext, useMemo, useEffect } from 'react';
 import { ProjectContext } from '../../contexts/ProjectContext';
 import Button from '../Button';
@@ -79,22 +78,24 @@ const WebsiteContentView: React.FC = () => {
   const copyAll = (generation: WebsiteGeneration) => {
     const keywords = getKeywordsString(generation.seoKeywords);
     
-    // Improved Text Cleanup Logic:
-    // 1. Replace block-level tags (h1-h6, p, div, li) with newline patterns to preserve structure
-    // 2. Replace <br> with newlines
-    // 3. Strip all remaining tags
-    // 4. Decode HTML entities if any (basic ones)
-    // 5. Trim excessive whitespace
-    
+    // Strict Plain Text Cleanup Logic
     let contentText = generation.pageContent
-        .replace(/<h[1-6]>(.*?)<\/h[1-6]>/gi, '\n\n$1\n') // Headers get double spacing before, single after
-        .replace(/<p>(.*?)<\/p>/gi, '$1\n\n') // Paragraphs get double spacing after
-        .replace(/<br\s*\/?>/gi, '\n') // Line breaks
-        .replace(/<li[^>]*>(.*?)<\/li>/gi, '• $1\n') // List items get bullets
-        .replace(/<div[^>]*>(.*?)<\/div>/gi, '$1\n') // Divs generally get a newline
-        .replace(/<[^>]+>/g, '') // Strip any remaining HTML tags
-        .replace(/&nbsp;/g, ' ') // Clean non-breaking spaces
-        .replace(/\n\s*\n\s*\n/g, '\n\n') // Collapse triple newlines to double
+        // Replace block element endings with double newlines for paragraph separation
+        .replace(/<\/(p|div|h[1-6]|ul|ol|article|section|blockquote)>/gi, '\n\n')
+        // Replace breaks with single newline
+        .replace(/<br\s*\/?>/gi, '\n')
+        // Replace list item starts with a bullet point
+        .replace(/<li[^>]*>/gi, '• ')
+        // Strip ALL remaining HTML tags
+        .replace(/<[^>]+>/g, '')
+        // Decode common HTML entities (basic)
+        .replace(/&nbsp;/g, ' ')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        // Collapse multiple newlines into max 2
+        .replace(/\n\s*\n\s*\n/g, '\n\n')
         .trim();
 
     const textToCopy = `--- Meta Description ---\n${generation.metaDescription}\n\n--- SEO Keywords ---\n${keywords}\n\n--- Page Content ---\n${contentText}`; 
@@ -206,7 +207,7 @@ const WebsiteContentView: React.FC = () => {
               <div className="flex-grow">
                 <div className="flex justify-between items-center mb-2">
                    <h4 className="text-sm font-bold text-white/90 uppercase tracking-wider">{isAr ? 'محتوى الصفحة' : 'Page Content'}</h4>
-                   <CopyButton text={copyAll(gen)} label={isAr ? "نسخ (نص فقط)" : "Copy (Plain Text)"} />
+                   <CopyButton text={copyAll(gen)} label={isAr ? "نسخ (نص نظيف)" : "Copy (Plain Text)"} />
                 </div>
                 <div 
                     className="text-white/80 bg-black/20 p-5 rounded-lg border border-white/5 prose prose-invert prose-sm max-w-none prose-headings:text-[#bf8339] prose-a:text-blue-400 prose-strong:text-white"
@@ -215,7 +216,7 @@ const WebsiteContentView: React.FC = () => {
               </div>
               
               <div className="pt-4 border-t border-white/10 mt-auto">
-                <CopyButton text={copyAll(gen)} label={isAr ? "نسخ المحتوى كاملاً (بدون رموز)" : "Copy Full Content (Plain Text)"} className="!w-full !justify-center !py-3 !text-sm !bg-[#bf8339]/10 !text-[#bf8339] hover:!bg-[#bf8339] hover:!text-[#0a1e3c] !font-bold" />
+                <CopyButton text={copyAll(gen)} label={isAr ? "نسخ المحتوى كاملاً (بدون أكواد HTML)" : "Copy Full Content (Plain Text No HTML)"} className="!w-full !justify-center !py-3 !text-sm !bg-[#bf8339]/10 !text-[#bf8339] hover:!bg-[#bf8339] hover:!text-[#0a1e3c] !font-bold" />
               </div>
             </div>
           ))}

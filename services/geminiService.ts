@@ -210,13 +210,14 @@ export const generateWebsiteContent = async (topic: string, language: string, in
     **Context:**
     - Industry: ${industry}
     - Tone: ${tone}
-    - Language: ${language} (Strictly adhere to this language. If Arabic, use eloquent, modern, yet rich Arabic phrasing. Avoid literal translations).
+    - Language: ${language} (Strictly adhere to this language. If Arabic, use eloquent, modern, yet rich Arabic phrasing. Avoid literal translations, avoid repeated sentence structures, and avoid "robot" words).
 
     **Writing Guidelines (CRITICAL):**
     1. **Be Human:** Use varied sentence structures, rhetorical devices, and emotional hooks. Avoid repetitive patterns.
     2. **Be Expert:** Sound like someone who deeply understands the subject matter and the audience's pain points.
     3. **Show, Don't Just Tell:** Use descriptive language that paints a picture rather than just listing features.
     4. **No Fluff:** Every word must earn its place. Be concise but impactful.
+    5. **Avoid AI Patterns:** Do not use phrases like "In today's world", "Unlock your potential", or generic openers. Start with a hook.
 
     **Version 1 Strategy (The Authority):** Grounded, trustworthy, professional, and deeply reassuring. Focus on expertise and tangible results.
     **Version 2 Strategy (The Visionary):** Inspiring, bold, creative, and evocative. Focus on the "why", the feeling, and the future transformation.
