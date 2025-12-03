@@ -10,13 +10,15 @@ import { ARCHIVE_STORAGE_KEY, INDUSTRIES_GROUPED, LANGUAGES_GROUPED, TONES_GROUP
 import AccordionSelect from '../AccordionSelect';
 import CopyButton from '../CopyButton';
 import ExportMenu from '../ExportMenu';
+import WebsitePreview from '../WebsitePreview';
 
 const WebsiteContentView: React.FC = () => {
-  const { topic, tone, language, industry, updateProjectState, appLanguage } = useContext(ProjectContext);
+  const { topic, tone, language, industry, theme, updateProjectState, appLanguage } = useContext(ProjectContext);
   const isAr = appLanguage === 'ar';
 
   const [localTopic, setLocalTopic] = useState(topic);
   const [generations, setGenerations] = useState<WebsiteGeneration[] | null>(null);
+  const [selectedVersion, setSelectedVersion] = useState<WebsiteGeneration | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -25,9 +27,16 @@ const WebsiteContentView: React.FC = () => {
       const draft = getItem<ArchivedItem>('editDraft');
       if (draft && draft.type === 'Website') {
           setGenerations(draft.content);
+          setSelectedVersion(draft.content?.[0] || null);
           removeItem('editDraft');
       }
   }, []);
+
+  useEffect(() => {
+      if (generations && generations.length > 0) {
+          setSelectedVersion(generations[0]);
+      }
+  }, [generations]);
 
   // Memoized localized options
   const localizedIndustries = useMemo(() => INDUSTRIES_GROUPED.map(g => ({
@@ -53,11 +62,13 @@ const WebsiteContentView: React.FC = () => {
     setIsLoading(true);
     setError(null);
     setGenerations(null);
+    setSelectedVersion(null);
     try {
       updateProjectState({ topic: localTopic });
       const response = await geminiService.generateWebsiteContent(localTopic, language, industry, tone);
       setGenerations(response);
-      
+      setSelectedVersion(response?.[0] || null);
+
       const archive = getItem(ARCHIVE_STORAGE_KEY, []);
       archive.unshift({ id: Date.now().toString(), type: 'Website', content: response, timestamp: new Date().toISOString() });
       setItem(ARCHIVE_STORAGE_KEY, archive);
@@ -104,6 +115,7 @@ const WebsiteContentView: React.FC = () => {
   // Determine direction based on selected content language, not app language
   const contentDir = (language && (language.includes('Arabic') || language.includes('العربية'))) ? 'rtl' : 'ltr';
   const contentAlignClass = contentDir === 'rtl' ? 'text-right' : 'text-left';
+  const accentColor = theme === 'light' ? '#bf8339' : '#f0c074';
 
   return (
     <div className="space-y-8 animate-fade-in pb-20">
@@ -166,59 +178,98 @@ const WebsiteContentView: React.FC = () => {
       {isLoading && <div className="flex justify-center py-8"><Loader /></div>}
 
       {generations && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-fade-in" dir={contentDir}>
-          {generations?.map((gen, idx) => (
-            <div key={idx} className={`bg-white/5 p-6 rounded-xl border border-white/10 space-y-6 flex flex-col hover:border-[#bf8339]/30 transition-all ${contentAlignClass}`}>
-              <div className="flex justify-between items-center border-b border-white/10 pb-3">
-                  <h3 className="text-2xl font-bold text-[#bf8339]">
-                      {isAr 
-                        ? (gen.version === 1 ? 'النسخة 1 (الخبير الموثوق)' : 'النسخة 2 (الرؤية الملهمة)') 
-                        : (gen.version === 1 ? 'Version 1 (The Authority)' : 'Version 2 (The Visionary)')}
-                  </h3>
-                  <ExportMenu content={copyAll(gen)} type="text" filename={`website-content-v${gen.version || idx+1}`} label={isAr ? "تصدير" : "Export"} />
-              </div>
-              
-              {/* Meta Description */}
-              <div>
-                <div className="flex justify-between items-center mb-2">
-                   <h4 className="text-sm font-bold text-white/90 uppercase tracking-wider">{isAr ? 'الوصف التعريفي (Meta)' : 'Meta Description'}</h4>
-                   <CopyButton text={gen.metaDescription} />
+        <div className="space-y-8 animate-fade-in">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6" dir={contentDir}>
+            {generations?.map((gen, idx) => (
+              <div key={idx} className={`bg-white/5 p-6 rounded-xl border border-white/10 space-y-6 flex flex-col hover:border-[#bf8339]/30 transition-all ${contentAlignClass}`}>
+                <div className="flex justify-between items-center border-b border-white/10 pb-3">
+                    <h3 className="text-2xl font-bold text-[#bf8339]">
+                        {isAr
+                          ? (gen.version === 1 ? 'النسخة 1 (الخبير الموثوق)' : 'النسخة 2 (الرؤية الملهمة)')
+                          : (gen.version === 1 ? 'Version 1 (The Authority)' : 'Version 2 (The Visionary)')}
+                    </h3>
+                    <ExportMenu content={copyAll(gen)} type="text" filename={`website-content-v${gen.version || idx+1}`} label={isAr ? "تصدير" : "Export"} />
                 </div>
-                <p className="text-white/80 bg-black/20 p-3 rounded-lg text-sm leading-relaxed border border-white/5">{gen.metaDescription}</p>
+
+                {/* Meta Description */}
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                     <h4 className="text-sm font-bold text-white/90 uppercase tracking-wider">{isAr ? 'الوصف التعريفي (Meta)' : 'Meta Description'}</h4>
+                     <CopyButton text={gen.metaDescription} />
+                  </div>
+                  <p className="text-white/80 bg-black/20 p-3 rounded-lg text-sm leading-relaxed border border-white/5">{gen.metaDescription}</p>
+                </div>
+
+                {/* Keywords */}
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <h4 className="text-sm font-bold text-white/90 uppercase tracking-wider">{isAr ? 'الكلمات المفتاحية (SEO)' : 'SEO Keywords'}</h4>
+                    <CopyButton text={getKeywordsString(gen.seoKeywords)} />
+                  </div>
+                  <div className="flex flex-wrap gap-2 bg-black/20 p-3 rounded-lg border border-white/5">
+                    {Array.isArray(gen.seoKeywords) ? gen.seoKeywords.map((kw, i) => (
+                      <span key={i} className="text-xs bg-[#bf8339]/10 text-[#bf8339] px-2 py-1 rounded border border-[#bf8339]/20">{kw}</span>
+                    )) : (
+                      <span className="text-xs text-white/60">{String(gen.seoKeywords)}</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Page Content */}
+                <div className="flex-grow">
+                  <div className="flex justify-between items-center mb-2">
+                     <h4 className="text-sm font-bold text-white/90 uppercase tracking-wider">{isAr ? 'محتوى الصفحة' : 'Page Content'}</h4>
+                     <CopyButton text={copyAll(gen)} label={isAr ? "نسخ (نص فقط)" : "Copy (Plain Text)"} />
+                  </div>
+                  <div
+                      className="text-white/80 bg-black/20 p-5 rounded-lg border border-white/5 prose prose-invert prose-sm max-w-none prose-headings:text-[#bf8339] prose-a:text-blue-400 prose-strong:text-white"
+                      dangerouslySetInnerHTML={{ __html: gen.pageContent }}
+                  ></div>
+                </div>
+
+                <div className="pt-4 border-t border-white/10 mt-auto">
+                  <CopyButton text={copyAll(gen)} label={isAr ? "نسخ المحتوى كاملاً (بدون رموز)" : "Copy Full Content (Plain Text)"} className="!w-full !justify-center !py-3 !text-sm !bg-[#bf8339]/10 !text-[#bf8339] hover:!bg-[#bf8339] hover:!text-[#0a1e3c] !font-bold" />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {selectedVersion && (
+            <div className="bg-white/5 border border-[#bf8339]/20 rounded-2xl p-6 shadow-2xl space-y-4">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                  <p className="text-sm uppercase tracking-[0.25em] text-white/60">{isAr ? 'نسخة جاهزة للنشر' : 'Publish-ready draft'}</p>
+                  <h3 className="text-2xl font-bold text-[#bf8339]">{isAr ? 'معاينة الموقع' : 'Live Website Preview'}</h3>
+                  <p className="text-white/70 text-sm mt-1">
+                    {isAr
+                      ? 'تصفح المحتوى كما سيظهر للزوار مع تطبيق الألوان والخلفية الذكية.'
+                      : 'Browse the generated copy as a real page with smart colors and layout.'}
+                  </p>
+                </div>
+                <div className="flex gap-2 flex-wrap">
+                  {generations.map((gen, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setSelectedVersion(gen)}
+                      className={`px-4 py-2 rounded-lg text-sm border transition ${
+                        selectedVersion === gen
+                          ? 'bg-[#bf8339] text-[#0a1e3c] border-[#bf8339]'
+                          : 'bg-white/5 text-white border-white/10 hover:border-[#bf8339]'
+                      }`}
+                    >
+                      {isAr ? `معاينة النسخة ${gen.version || idx + 1}` : `Preview v${gen.version || idx + 1}`}
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              {/* Keywords */}
-              <div>
-                <div className="flex justify-between items-center mb-2">
-                  <h4 className="text-sm font-bold text-white/90 uppercase tracking-wider">{isAr ? 'الكلمات المفتاحية (SEO)' : 'SEO Keywords'}</h4>
-                  <CopyButton text={getKeywordsString(gen.seoKeywords)} />
-                </div>
-                <div className="flex flex-wrap gap-2 bg-black/20 p-3 rounded-lg border border-white/5">
-                  {Array.isArray(gen.seoKeywords) ? gen.seoKeywords.map((kw, i) => (
-                    <span key={i} className="text-xs bg-[#bf8339]/10 text-[#bf8339] px-2 py-1 rounded border border-[#bf8339]/20">{kw}</span>
-                  )) : (
-                    <span className="text-xs text-white/60">{String(gen.seoKeywords)}</span>
-                  )}
-                </div>
-              </div>
-
-              {/* Page Content */}
-              <div className="flex-grow">
-                <div className="flex justify-between items-center mb-2">
-                   <h4 className="text-sm font-bold text-white/90 uppercase tracking-wider">{isAr ? 'محتوى الصفحة' : 'Page Content'}</h4>
-                   <CopyButton text={copyAll(gen)} label={isAr ? "نسخ (نص فقط)" : "Copy (Plain Text)"} />
-                </div>
-                <div 
-                    className="text-white/80 bg-black/20 p-5 rounded-lg border border-white/5 prose prose-invert prose-sm max-w-none prose-headings:text-[#bf8339] prose-a:text-blue-400 prose-strong:text-white"
-                    dangerouslySetInnerHTML={{ __html: gen.pageContent }}
-                ></div>
-              </div>
-              
-              <div className="pt-4 border-t border-white/10 mt-auto">
-                <CopyButton text={copyAll(gen)} label={isAr ? "نسخ المحتوى كاملاً (بدون رموز)" : "Copy Full Content (Plain Text)"} className="!w-full !justify-center !py-3 !text-sm !bg-[#bf8339]/10 !text-[#bf8339] hover:!bg-[#bf8339] hover:!text-[#0a1e3c] !font-bold" />
-              </div>
+              <WebsitePreview
+                generation={selectedVersion}
+                accentColor={accentColor}
+                direction={contentDir as 'rtl' | 'ltr'}
+              />
             </div>
-          ))}
+          )}
         </div>
       )}
     </div>
