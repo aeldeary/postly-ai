@@ -8,18 +8,29 @@ interface WebsitePreviewProps {
 }
 
 const WebsitePreview: React.FC<WebsitePreviewProps> = ({ generation, accentColor = '#bf8339', direction = 'ltr' }) => {
+  const escapeHtml = (value: string) =>
+    value
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+
   const keywords = Array.isArray(generation.seoKeywords)
     ? generation.seoKeywords
     : typeof generation.seoKeywords === 'string'
       ? generation.seoKeywords.split(',').map(k => k.trim()).filter(Boolean)
       : [];
 
+  const sanitizedMeta = escapeHtml(generation.metaDescription);
+  const sanitizedKeywords = keywords.map(escapeHtml);
+
   const srcDoc = useMemo(() => `<!DOCTYPE html>
   <html lang="en" dir="${direction}">
     <head>
       <meta charset="UTF-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <meta name="description" content="${generation.metaDescription}" />
+      <meta name="description" content="${sanitizedMeta}" />
       <title>Website Preview</title>
       <style>
         :root {
@@ -70,9 +81,9 @@ const WebsitePreview: React.FC<WebsitePreviewProps> = ({ generation, accentColor
       <section class="hero">
         <div class="label">SEO WEBSITE DRAFT</div>
         <h1>${generation.version ? `Version ${generation.version}` : 'Live Draft'}</h1>
-        <p class="meta">${generation.metaDescription}</p>
+        <p class="meta">${sanitizedMeta}</p>
         <div class="keywords">
-          ${keywords.map(k => `<span class="pill">${k}</span>`).join('')}
+          ${sanitizedKeywords.map(k => `<span class="pill">${k}</span>`).join('')}
         </div>
       </section>
 
