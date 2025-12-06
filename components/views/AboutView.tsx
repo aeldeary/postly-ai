@@ -7,7 +7,7 @@ import {
   HomeIcon, CreatePostIcon, WebsiteIcon, ImageIcon, StyleIcon, ArchiveIcon, 
   LightBulbIcon, DocumentTextIcon, MagicWandIcon, PaintBrushIcon, 
   TemplateIcon, ChartBarIcon, VideoCameraIcon, SpeakerWaveIcon, 
-  SparklesIcon, BoltIcon, FingerPrintIcon, SwatchIcon, ShoppingBagIcon, CogIcon, InfoIcon, PostlyLogo
+  SparklesIcon, BoltIcon, FingerPrintIcon, SwatchIcon, ShoppingBagIcon, CogIcon, InfoIcon, PostlyLogo, WorkflowIcon
 } from '../Icons';
 
 interface AboutViewProps {
@@ -73,13 +73,6 @@ const AboutView: React.FC<AboutViewProps> = ({ setActiveTab }) => {
       descAr: 'حول النصوص إلى تعليق صوتي احترافي بنبرات بشرية واقعية ولهجات متعددة.',
       descEn: 'Convert text to professional voiceovers with realistic human tones and dialects.',
       icon: <SpeakerWaveIcon className="w-6 h-6 text-[#bf8339]" />
-    },
-    {
-      titleAr: 'التخصيص والهوية',
-      titleEn: 'Personalization & Brand',
-      descAr: 'درب الذكاء الاصطناعي على أسلوبك الخاص وابنِ هوية بصرية كاملة لعلامتك التجارية.',
-      descEn: 'Train AI on your unique style and build a full visual identity for your brand.',
-      icon: <FingerPrintIcon className="w-6 h-6 text-[#bf8339]" />
     }
   ];
 

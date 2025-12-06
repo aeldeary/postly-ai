@@ -67,6 +67,30 @@ const retry = async <T>(fn: () => Promise<T>, retries = 3, delay = 2000): Promis
     }
 };
 
+// Helper to map custom aspect ratio keys to API supported values
+const getSafeAspectRatio = (ratio: string): string => {
+    switch (ratio) {
+        // Social Media & Standard
+        case '1:1': return '1:1';
+        case '16:9': return '16:9';
+        case '9:16': return '9:16';
+        case '3:4': return '3:4';
+        case '4:3': return '4:3';
+        
+        // Print
+        case 'A4_V': case 'A3_V': case 'A5_V': return '3:4'; // Portrait Paper roughly maps to 3:4
+        case 'A4_H': case 'A3_H': case 'A5_H': return '4:3'; // Landscape Paper roughly maps to 4:3
+        case 'BizCard': return '16:9'; // Approx 1.8 ratio
+        
+        // Banners
+        case 'Rollup_S': case 'Rollup_M': case 'Rollup_L': return '9:16'; // Vertical Banners
+        case 'Banner_H': return '16:9'; // Horizontal Banners
+        case 'Backdrop': return '4:3'; // Standard Backdrop
+        
+        default: return '1:1';
+    }
+};
+
 // Wrappers
 const generateContent = (params: GenerateContentParameters): Promise<GenerateContentResponse> => retry(() => ai.models.generateContent(params));
 const generateVideosWrapper = (params: any) => retry(() => ai.models.generateVideos(params));
@@ -298,6 +322,9 @@ export const generateImage = async (
     const selectedModel = model || (isHD ? 'gemini-3-pro-image-preview' : 'gemini-2.5-flash-image');
     let finalPrompt = prompt;
     
+    // Map custom aspect ratio to API supported value
+    const apiAspectRatio = getSafeAspectRatio(aspectRatio);
+    
     const technicals = [];
     if (style) technicals.push(`**Art Style**: ${style}`);
     if (visualSettings?.angle) technicals.push(`**Camera Angle**: ${visualSettings.angle}`);
@@ -323,7 +350,7 @@ export const generateImage = async (
             contents: { parts },
             config: {
                 imageConfig: {
-                    aspectRatio: aspectRatio as any,
+                    aspectRatio: apiAspectRatio as any,
                     imageSize: (selectedModel === 'gemini-3-pro-image-preview' && isHD) ? '2K' : undefined
                 }
             }
@@ -342,6 +369,36 @@ export const generateImage = async (
         if (textPart) throw new Error(`Generation failed (Text returned): ${textPart}`);
 
         throw new Error("No image generated.");
+    } catch (e) { throw new Error(safeErrorHandler(e)); }
+};
+
+export const processImageEdit = async (
+    imageData: string,
+    mimeType: string,
+    prompt: string,
+    aspectRatio: string = '1:1'
+): Promise<string> => {
+    // Uses the image editing capability (prompt + image)
+    const apiAspectRatio = getSafeAspectRatio(aspectRatio);
+    const parts = [
+        { inlineData: { data: imageData, mimeType: mimeType } },
+        { text: prompt }
+    ];
+
+    try {
+        const response = await generateContent({
+            model: 'gemini-2.5-flash-image', // Best for editing
+            contents: { parts },
+            config: {
+                imageConfig: { aspectRatio: apiAspectRatio as any }
+            }
+        });
+
+        for (const part of response.candidates?.[0]?.content?.parts || []) {
+            if (part.inlineData) return part.inlineData.data;
+        }
+        
+        throw new Error("No edited image generated.");
     } catch (e) { throw new Error(safeErrorHandler(e)); }
 };
 
@@ -434,10 +491,12 @@ export const blendImages = async (images: any[], description: string, aspectRati
         }
     });
     try {
+        // Map custom ratio
+        const apiRatio = getSafeAspectRatio(aspectRatio);
         const response = await generateContent({
             model: 'gemini-2.5-flash-image', 
             contents: { parts },
-            config: { imageConfig: { aspectRatio: aspectRatio as any } }
+            config: { imageConfig: { aspectRatio: apiRatio as any } }
         });
         for (const part of response.candidates?.[0]?.content?.parts || []) {
             if (part.inlineData) return part.inlineData.data;
@@ -468,8 +527,9 @@ export const analyzeStyle = async (text: string): Promise<string> => {
     } catch (e) { throw new Error(safeErrorHandler(e)); }
 };
 
-export const detectStyle = async (base64: string, mimeType: string): Promise<any> => {
-    const prompt = `Analyze the visual style of this image. Return JSON: { mood, lighting, keywords (array) }.`;
+export const detectStyle = async (base64: string, mimeType: string, language: string = 'English'): Promise<any> => {
+    const prompt = `Analyze the visual style of this image. Return a JSON object with these keys: "mood", "lighting", "keywords" (array of strings).
+    IMPORTANT: The values for "mood", "lighting", and "keywords" MUST be translated to ${language}.`;
     try {
         const response = await generateContent({
             model: 'gemini-2.5-flash',
@@ -481,8 +541,9 @@ export const detectStyle = async (base64: string, mimeType: string): Promise<any
     } catch (e) { throw new Error(safeErrorHandler(e)); }
 };
 
-export const analyzeScene = async (base64: string, mimeType: string): Promise<string> => {
-    const prompt = `Analyze this scene for a photographer. Discuss lighting, composition, and angles.`;
+export const analyzeScene = async (base64: string, mimeType: string, language: string = 'English'): Promise<string> => {
+    const prompt = `Act as a professional photographer. Analyze this image focusing on lighting, composition, camera angle, and subject. Provide a constructive critique and suggestions.
+    Output Language: ${language}.`;
     try {
         const response = await generateContent({
             model: 'gemini-2.5-flash',
@@ -750,9 +811,7 @@ export const generateInfographic = async (points: any[], style: string, layout: 
         points.forEach((p: any, i: number) => { prompt += `\n${i+1}. [Icon: ${p.icon}] Title: "${p.title}", Desc: "${p.description}".`; });
         if (renderText) prompt += `\nRender exact text. Language: ${langCode}.`; else prompt += `\nNo text rendering.`;
         
-        let apiRatio = aspectRatio;
-        const ratioMap: Record<string, string> = { '1:1': '1:1', '4:5': '3:4', 'A4_V': '3:4', 'Story': '9:16', '16:9': '16:9' };
-        if (ratioMap[aspectRatio]) apiRatio = ratioMap[aspectRatio];
+        let apiRatio = getSafeAspectRatio(aspectRatio);
 
         const base64 = await generateImage(prompt, 'gemini-3-pro-image-preview', apiRatio, style);
         return `data:image/jpeg;base64,${base64}`;

@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useContext, useMemo, useEffect } from 'react';
 import { ProjectContext } from '../../contexts/ProjectContext';
 import Button from '../Button';
@@ -77,7 +76,7 @@ const ProfessionalProductView: React.FC = () => {
         options: g.options.map(o => ({ 
             label: isAr ? o.label.ar : o.label.en, 
             value: o.value,
-            description: o.desc 
+            description: o.description 
         }))
     })), [isAr]);
 

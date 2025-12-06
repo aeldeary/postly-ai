@@ -218,7 +218,8 @@ const GraphicDesignerView: React.FC = () => {
         label: isAr ? g.label.ar : g.label.en,
         options: g.options.map(o => ({
             label: isAr ? o.label.ar : o.label.en,
-            value: o.value
+            value: o.value,
+            description: o.description // Use description from updated constants
         }))
     })), [isAr]);
 
@@ -318,28 +319,10 @@ const GraphicDesignerView: React.FC = () => {
     };
 
     const getApiRatio = (sizeValue: string): string => {
-        // Map common graphic design presets to closest supported model ratio
-        switch (sizeValue) {
-            // Square
-            case '1:1': return '1:1';
-            
-            // Vertical
-            case '4:5': return '3:4'; 
-            case '9:16': return '9:16';
-            case 'A4_V': case 'A3_V': case 'A5_V': return '3:4';
-            case 'Rollup': case 'X_Banner': case 'Web_Skyscraper': case 'Flyer_DL': return '9:16';
-            
-            // Horizontal
-            case '16:9': return '16:9';
-            case 'FB_Cover': case 'Twitter_Header': return '16:9';
-            case 'Billboard': case 'Web_Leaderboard': return '16:9';
-            case 'A4_H': case 'A3_H': case 'A5_H': return '4:3';
-            case 'LinkedIn_Post': return '4:3';
-            case 'BizCard': return '16:9';
-            
-            // Default
-            default: return '1:1';
-        }
+        // Now mostly handled by geminiService, but we keep basic normalization here if needed
+        // Since we are passing the specific keys (A4_V, etc.) to the service, we can just return the value as is.
+        // The service's generateImage -> getSafeAspectRatio will handle the mapping.
+        return sizeValue;
     };
 
     const drawTextLayer = (
@@ -586,7 +569,10 @@ const GraphicDesignerView: React.FC = () => {
                 'Poster'
             );
 
-            const apiRatio = getApiRatio(posterSize);
+            // Pass the selected size key (e.g. 'A4_V') directly to the service
+            // The service now handles mapping it to the closest API ratio
+            const apiRatio = posterSize; 
+            
             const refs = referenceImages.map(img => ({ data: img.data, mimeType: img.mimeType }));
             const base64 = await geminiService.generateImage(enhancedPrompt, 'gemini-2.5-flash-image', apiRatio, posterStyle, refs.length > 0 ? refs : undefined);
             const rawImage = `data:image/jpeg;base64,${base64}`;

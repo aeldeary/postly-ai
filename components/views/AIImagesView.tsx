@@ -1,764 +1,534 @@
 
-import React, { useState, useContext, useRef, useMemo, useEffect } from 'react';
+import React, { useState, useContext, useMemo, useRef, useEffect } from 'react';
 import { ProjectContext } from '../../contexts/ProjectContext';
 import Button from '../Button';
-import { Loader, ImageIcon, TrashIcon, AdjustmentsHorizontalIcon, FingerPrintIcon, BlenderIcon, SparklesIcon, ArrowsRightLeftIcon, PhotoIcon, MagicWandIcon, SwatchIcon, EyeIcon } from '../Icons';
+import { ImageIcon, SparklesIcon, BlenderIcon, TrashIcon, AdjustmentsIcon, ScaleIcon, RefreshIcon, ArrowsRightLeftIcon } from '../Icons';
 import * as geminiService from '../../services/geminiService';
 import { setItem, getItem } from '../../utils/localStorage';
-import { IMAGE_MODELS, UNIFIED_IMAGE_STYLES, ARCHIVE_STORAGE_KEY, UI_TRANSLATIONS, ASPECT_RATIOS_GROUPED, CAMERA_ANGLES, LIGHTING_STYLES, PRODUCT_SCENES_GROUPED } from '../../constants';
+import { ARCHIVE_STORAGE_KEY, ASPECT_RATIOS_GROUPED, UNIFIED_IMAGE_STYLES, CAMERA_ANGLES, LIGHTING_STYLES, PRODUCT_SCENES_GROUPED, UI_TRANSLATIONS } from '../../constants';
 import CustomGroupedSelect from '../CustomGroupedSelect';
-import ImageBlenderView from './ImageBlenderView';
-import CopyButton from '../CopyButton';
 import ExportMenu from '../ExportMenu';
-import { ArchivedItem } from '../../types';
+import ImageBlenderView from './ImageBlenderView';
 import ImageCropperModal from '../ImageCropperModal';
 
-type SubTab = 'create' | 'enhance' | 'smart_edit' | 'color' | 'blend';
-type EnhancementMode = 'General' | 'Deblur' | 'Restore';
+type SubTab = 'create' | 'color' | 'upscale' | 'restore' | 'blend';
 
 const AIImagesView: React.FC = () => {
-  const { topic, appLanguage, theme, activeDraft, updateProjectState } = useContext(ProjectContext);
-  const isAr = appLanguage === 'ar';
-  const t = UI_TRANSLATIONS;
-  const isComfort = theme === 'comfort';
-  
-  const [activeSubTab, setActiveSubTab] = useState<SubTab>('create');
+    const { appLanguage, topic, updateProjectState } = useContext(ProjectContext);
+    const isAr = appLanguage === 'ar';
+    const t = UI_TRANSLATIONS;
 
-  // --- CREATION STATE ---
-  const [creationTopic, setCreationTopic] = useState(topic);
-  const savedSettings = getItem<{ imageModel: string; aspectRatio: string; style: string }>('aiImagesSettings');
-  const [aspectRatio, setAspectRatio] = useState(savedSettings?.aspectRatio || '1:1');
-  const [style, setStyle] = useState(savedSettings?.style || UNIFIED_IMAGE_STYLES?.[0]?.options[0]?.value);
-  const [cameraAngle, setCameraAngle] = useState('');
-  const [lighting, setLighting] = useState('');
-  const [productScene, setProductScene] = useState('');
-  const [isHD, setIsHD] = useState(false); // Quality toggle
-  
-  // Prompt Generator
-  const [promptVariations, setPromptVariations] = useState<string[]>([]);
-  const [isGeneratingPrompts, setIsGeneratingPrompts] = useState(false);
+    const [activeSubTab, setActiveSubTab] = useState<SubTab>('create');
 
-  const [referenceImages, setReferenceImages] = useState<{ id: string, data: string, mimeType: string }[]>([]);
-  const referenceFileRef = useRef<HTMLInputElement>(null);
-  
-  // --- EDITING STATES ---
-  const [currentImage, setCurrentImage] = useState<string | null>(null); // Main image being worked on
-  const [originalImage, setOriginalImage] = useState<string | null>(null); // For compare
-  const [detectedRatio, setDetectedRatio] = useState<string>('1:1'); // Aspect Ratio Detection for Edits
+    // Create Tab State
+    const [prompt, setPrompt] = useState(topic || '');
+    const [aspectRatio, setAspectRatio] = useState('1:1');
+    const [style, setStyle] = useState('Photorealistic');
+    const [cameraAngle, setCameraAngle] = useState('');
+    const [lighting, setLighting] = useState('');
+    const [productScene, setProductScene] = useState('');
+    const [isHD, setIsHD] = useState(false);
+    
+    // New Feature States
+    const [sourceImage, setSourceImage] = useState<string | null>(null);
+    const [sourceMime, setSourceMime] = useState('image/jpeg');
+    const [resultImage, setResultImage] = useState<string | null>(null);
+    
+    // Color Correction State
+    const [brightness, setBrightness] = useState(0);
+    const [contrast, setContrast] = useState(0);
+    const [saturation, setSaturation] = useState(0);
+    const [colorPreset, setColorPreset] = useState('');
+    
+    // Upscale State
+    const [upscaleLevel, setUpscaleLevel] = useState<'2x' | '4x' | '8x'>('4x');
+    
+    // Common State
+    const [isLoading, setIsLoading] = useState(false);
+    const [generatedImage, setGeneratedImage] = useState<string | null>(null); // For Create Tab
 
-  const [enhancementMode, setEnhancementMode] = useState<EnhancementMode>('General');
-  const [enhanceLevel, setEnhanceLevel] = useState('Medium');
-  const [editPrompt, setEditPrompt] = useState('');
-  const [filters, setFilters] = useState({ brightness: 100, contrast: 100, saturate: 100, hue: 0, blur: 0, sepia: 0 });
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  
-  // Compare Slider State
-  const [compareSlider, setCompareSlider] = useState(50);
-  const [isDraggingSlider, setIsDraggingSlider] = useState(false);
-  const compareContainerRef = useRef<HTMLDivElement>(null);
+    // Compare Slider
+    const [compareSlider, setCompareSlider] = useState(50);
+    const [isDraggingSlider, setIsDraggingSlider] = useState(false);
+    const compareContainerRef = useRef<HTMLDivElement>(null);
 
-  const uploadFileRef = useRef<HTMLInputElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+    // Reference Images State (Create Tab)
+    const [referenceImages, setReferenceImages] = useState<{ id: string, data: string, mimeType: string }[]>([]);
+    
+    // Crop & Upload
+    const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
+    const referenceFileRef = useRef<HTMLInputElement>(null);
+    const featureFileRef = useRef<HTMLInputElement>(null); // For Color, Upscale, Restore
 
-  // CROPPER STATE
-  const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
-  const [cropTarget, setCropTarget] = useState<'reference' | 'edit'>('reference');
-  const [pendingFileType, setPendingFileType] = useState('image/jpeg');
-
-  // Check for restored draft from Context
-  useEffect(() => {
-      if (activeDraft && activeDraft.type === 'Image') {
-          setCurrentImage(activeDraft.content);
-          setOriginalImage(activeDraft.content);
-          // Clean up context
-          updateProjectState({ activeDraft: null });
-      }
-  }, [activeDraft]);
-
-  // Group Memos
-  const styleGroups = useMemo(() => UNIFIED_IMAGE_STYLES.map(g => ({
-      label: isAr ? g.label.ar : g.label.en,
-      options: g.options.map(o => ({ label: isAr ? o.label.ar : o.label.en, value: o.value }))
-  })), [isAr]);
-
-  const aspectRatioGroups = useMemo(() => ASPECT_RATIOS_GROUPED.map(g => ({
+    // Memos for Selects
+    const styleGroups = useMemo(() => UNIFIED_IMAGE_STYLES.map(g => ({
         label: isAr ? g.label.ar : g.label.en,
-        options: g.options.map(o => ({ 
-            label: isAr ? o.label.ar : o.label.en, 
-            value: o.value,
-            description: o.desc 
-        }))
-  })), [isAr]);
+        options: g.options.map(o => ({ label: isAr ? o.label.ar : o.label.en, value: o.value }))
+    })), [isAr]);
 
-  const productSceneGroups = useMemo(() => PRODUCT_SCENES_GROUPED.map(g => ({
-      label: isAr ? g.label.ar : g.label.en,
-      options: g.options.map(o => ({
-          label: `${o.icon} ${isAr ? o.label.ar : o.label.en}`,
-          value: o.value
-      }))
-  })), [isAr]);
+    const aspectRatioGroups = useMemo(() => ASPECT_RATIOS_GROUPED.map(g => ({
+        label: isAr ? g.label.ar : g.label.en,
+        options: g.options.map(o => ({ label: isAr ? o.label.ar : o.label.en, value: o.value, description: o.description }))
+    })), [isAr]);
 
-  // New Dropdown Groups for Camera & Lighting
-  const cameraAngleGroups = useMemo(() => [{
-      label: isAr ? 'زوايا التصوير' : 'Camera Angles',
-      options: CAMERA_ANGLES.map(a => ({
-          label: `${a.icon} ${isAr ? a.label.ar : a.label.en}`,
-          value: a.value
-      }))
-  }], [isAr]);
+    const cameraAngleGroups = useMemo(() => [{
+        label: isAr ? 'زوايا التصوير' : 'Camera Angles',
+        options: CAMERA_ANGLES.map(a => ({ label: `${a.icon} ${isAr ? a.label.ar : a.label.en}`, value: a.value }))
+    }], [isAr]);
 
-  const lightingGroups = useMemo(() => [{
-      label: isAr ? 'أنماط الإضاءة' : 'Lighting Styles',
-      options: LIGHTING_STYLES.map(l => ({
-          label: `${l.icon} ${isAr ? l.label.ar : l.label.en}`,
-          value: l.value
-      }))
-  }], [isAr]);
+    const lightingGroups = useMemo(() => [{
+        label: isAr ? 'أنماط الإضاءة' : 'Lighting Styles',
+        options: LIGHTING_STYLES.map(l => ({ label: `${l.icon} ${isAr ? l.label.ar : l.label.en}`, value: l.value }))
+    }], [isAr]);
 
-  // Helper for ratio detection - Snaps to supported API ratios
-  const getClosestAspectRatio = (width: number, height: number): string => {
-    const ratio = width / height;
-    const supported = [
-        { r: 1, val: '1:1' },
-        { r: 0.75, val: '3:4' },
-        { r: 1.333, val: '4:3' },
-        { r: 0.5625, val: '9:16' },
-        { r: 1.777, val: '16:9' }
-    ];
-    // Find closest
-    let closest = supported[0];
-    let minDiff = Math.abs(ratio - closest.r);
-    for (let i = 1; i < supported.length; i++) {
-        const diff = Math.abs(ratio - supported[i].r);
-        if (diff < minDiff) {
-            minDiff = diff;
-            closest = supported[i];
+    const productSceneGroups = useMemo(() => PRODUCT_SCENES_GROUPED.map(g => ({
+        label: isAr ? g.label.ar : g.label.en,
+        options: g.options.map(o => ({ label: isAr ? o.label.ar : o.label.en, value: o.value }))
+    })), [isAr]);
+
+    // Handle Upload for Features
+    const handleFeatureUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            const base64 = (reader.result as string).split(',')[1];
+            setSourceImage(`data:${file.type};base64,${base64}`);
+            setSourceMime(file.type);
+            setResultImage(null); // Reset result on new upload
+        };
+        reader.readAsDataURL(file);
+        e.target.value = '';
+    };
+
+    const handleGenerate = async () => {
+        if (!prompt) return alert(isAr ? 'يرجى كتابة وصف للصورة' : 'Please enter a prompt');
+        setIsLoading(true);
+        setGeneratedImage(null);
+        
+        try {
+            updateProjectState({ topic: prompt });
+            const refs = referenceImages.length > 0 
+                ? referenceImages.map(img => ({ data: img.data, mimeType: img.mimeType })) 
+                : undefined;
+
+            const result = await geminiService.generateImage(
+                prompt,
+                isHD ? 'gemini-3-pro-image-preview' : 'gemini-2.5-flash-image',
+                aspectRatio,
+                style,
+                refs,
+                undefined,
+                isHD,
+                { angle: cameraAngle, lighting, scene: productScene }
+            );
+            const fullImg = `data:image/jpeg;base64,${result}`;
+            setGeneratedImage(fullImg);
+            saveToArchive(fullImg);
+        } catch (e: any) {
+            alert(e.message || (isAr ? "فشل التوليد" : "Generation Failed"));
+        } finally {
+            setIsLoading(false);
         }
-    }
-    return closest.val;
-  };
+    };
 
-  // --- HANDLERS ---
+    const handleProcessImage = async () => {
+        if (!sourceImage) return alert(isAr ? 'يرجى رفع صورة' : 'Please upload an image');
+        setIsLoading(true);
+        try {
+            let instructions = "";
+            let modelPrompt = "";
 
-  const handleGlobalUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-      setError(null);
-      const file = e.target.files?.[0];
-      if (!file) return;
-      
-      const reader = new FileReader();
-      reader.onload = () => {
-          setCropImageSrc(reader.result as string);
-          setPendingFileType(file.type);
-          setCropTarget('edit');
-      };
-      reader.readAsDataURL(file);
-      // Reset input
-      e.target.value = '';
-  };
+            const rawData = sourceImage.split(',')[1];
 
-  const handleReferenceUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-      if (referenceImages.length >= 10) return alert(isAr ? "الحد الأقصى 10 صور" : "Max 10 images");
-      
-      const reader = new FileReader();
-      reader.onloadend = () => {
-          setCropImageSrc(reader.result as string);
-          setPendingFileType(file.type);
-          setCropTarget('reference');
-      };
-      reader.readAsDataURL(file);
-      // Reset input
-      e.target.value = '';
-  };
+            if (activeSubTab === 'color') {
+                instructions = `Color Correction Mode. Apply the following adjustments: Brightness: ${brightness > 0 ? '+' : ''}${brightness}%, Contrast: ${contrast > 0 ? '+' : ''}${contrast}%, Saturation: ${saturation > 0 ? '+' : ''}${saturation}%. `;
+                if (colorPreset) instructions += `Apply preset style: ${colorPreset}. `;
+                instructions += "Ensure natural, balanced lighting and white balance. Keep content identical.";
+                modelPrompt = instructions;
+            } 
+            else if (activeSubTab === 'upscale') {
+                instructions = `Upscale this image to ${upscaleLevel} resolution (simulated). Super resolution mode. Enhance micro-details, remove noise, sharpen edges while preserving facial features 100%. Quality: 8K Ultra-HD.`;
+                modelPrompt = instructions;
+            }
+            else if (activeSubTab === 'restore') {
+                modelPrompt = `Enhance the attached image to ultra-realistic quality with 1000% preservation of the original facial features, proportions, and expressions — identical to the reference face in every micro-detail.
+Do not crop, cut, or remove anything from the frame. Maintain the exact composition, pose, body position, camera angle, lighting, and background.
+Perform a full 8K Ultra-HD upscale with micro-texture enhancement (fine pores, realistic skin depth, hair strand definition, natural reflections).
+Sharpen the eyes, lashes, and lips with perfect clarity while keeping skin texture natural — no plastic effect at all.
+Balance highlights and shadows for true-to-life lighting, correct color tones with neutral white balance, and eliminate noise or compression artifacts.
+Do not modify or replace any visual element. Only enhance realism, depth, and fine details.
+The final image should look photographically perfect, extremely sharp yet natural, lifelike and clean — suitable for professional commercial use and close-up inspection.`;
+            }
 
-  const handleCropConfirm = (croppedBase64: string) => {
-      if (cropTarget === 'reference') {
-          setReferenceImages([...referenceImages, { id: Date.now().toString(), data: croppedBase64.split(',')[1], mimeType: 'image/jpeg' }]);
-      } else {
-          // Edit Mode
-          setCurrentImage(croppedBase64);
-          setOriginalImage(croppedBase64);
-          
-          // Auto Detect Aspect Ratio
-          const img = new Image();
-          img.src = croppedBase64;
-          img.onload = () => {
-              const r = getClosestAspectRatio(img.width, img.height);
-              setDetectedRatio(r);
-          };
-          setFilters({ brightness: 100, contrast: 100, saturate: 100, hue: 0, blur: 0, sepia: 0 });
-      }
-      setCropImageSrc(null);
-  };
+            // Using the editing service wrapper
+            const res = await geminiService.processImageEdit(rawData, sourceMime, modelPrompt);
+            const fullRes = `data:image/jpeg;base64,${res}`;
+            setResultImage(fullRes);
+            saveToArchive(fullRes);
 
-  const removeReference = (id: string) => {
-      setReferenceImages(prev => prev.filter(img => img.id !== id));
-  };
+        } catch (e: any) {
+            alert(e.message || (isAr ? "فشل المعالجة" : "Processing Failed"));
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
-  const handleGeneratePrompts = async () => {
-      if (!creationTopic) return alert(isAr ? "يرجى كتابة فكرة أولاً لتوليد المقترحات" : "Please enter a concept first to generate suggestions");
-      setIsGeneratingPrompts(true);
-      try {
-          const variations = await geminiService.generateImagePromptVariations(creationTopic);
-          setPromptVariations(variations);
-      } catch(e) {
-          console.error(e);
-      } finally {
-          setIsGeneratingPrompts(false);
-      }
-  };
+    const saveToArchive = (content: string) => {
+        const archive = getItem(ARCHIVE_STORAGE_KEY, []);
+        archive.unshift({ 
+            id: Date.now().toString(), 
+            type: activeSubTab === 'create' ? 'Image' : 'EditedImage', 
+            content: content, 
+            timestamp: new Date().toISOString() 
+        });
+        setItem(ARCHIVE_STORAGE_KEY, archive);
+    };
 
-  const handleGenerate = async () => {
-      setError(null);
-      // Allow generation if text exists OR if visual inputs (Ref Image / Scene) are present
-      const hasText = creationTopic && creationTopic.trim().length > 0;
-      const hasVisuals = referenceImages.length > 0 || !!productScene || !!cameraAngle || !!lighting;
+    // --- Slider Logic ---
+    const handleSliderMove = (e: any) => {
+        if (!isDraggingSlider || !compareContainerRef.current) return;
+        const rect = compareContainerRef.current.getBoundingClientRect();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const x = Math.max(0, Math.min(clientX - rect.left, rect.width));
+        const percentage = (x / rect.width) * 100;
+        setCompareSlider(percentage);
+    };
 
-      if (!hasText && !hasVisuals) {
-          return alert(isAr ? "يرجى كتابة وصف أو رفع صورة مرجعية أو اختيار إعدادات بصرية" : "Please enter a prompt, upload a reference image, or select visual settings.");
-      }
+    useEffect(() => {
+        const stopDrag = () => setIsDraggingSlider(false);
+        window.addEventListener('mouseup', stopDrag);
+        window.addEventListener('touchend', stopDrag);
+        window.addEventListener('mousemove', handleSliderMove);
+        window.addEventListener('touchmove', handleSliderMove);
+        return () => {
+            window.removeEventListener('mouseup', stopDrag);
+            window.removeEventListener('touchend', stopDrag);
+            window.removeEventListener('mousemove', handleSliderMove);
+            window.removeEventListener('touchmove', handleSliderMove);
+        };
+    }, [isDraggingSlider]);
 
-      setIsLoading(true);
-      setCurrentImage(null);
-      
-      try {
-          // KEY CHECK FOR PRO/HD MODEL
-          if (isHD && (window as any).aistudio) {
-              try {
-                 const hasKey = await (window as any).aistudio.hasSelectedApiKey();
-                 if (!hasKey) {
-                     await (window as any).aistudio.openSelectKey();
-                 }
-              } catch (e) {
-                  console.warn("AI Studio Key Check failed", e);
-              }
-          }
-
-          const modelName = isHD ? 'gemini-3-pro-image-preview' : 'gemini-2.5-flash-image';
-
-          // Determine Effective Prompt
-          let effectivePrompt = creationTopic;
-          if (!hasText) {
-              // Automatically construct prompt if user didn't type one but has visual inputs
-              if (referenceImages.length > 0) {
-                  effectivePrompt = "A high-quality visual representation based on the provided reference image";
-              } else if (productScene) {
-                  effectivePrompt = `Professional product photography in a ${productScene} environment`;
-              } else {
-                  effectivePrompt = "High quality professional photography";
-              }
-          }
-
-          const base64 = await geminiService.generateImage(
-              effectivePrompt, 
-              modelName, 
-              aspectRatio, 
-              style, 
-              referenceImages.map(i => ({data: i.data, mimeType: i.mimeType})),
-              undefined,
-              isHD, // Activate Realism/HD enhancers
-              { 
-                  angle: cameraAngle || undefined, 
-                  lighting: lighting || undefined, 
-                  scene: productScene || undefined
-              }
-          );
-          const fullImg = `data:image/jpeg;base64,${base64}`;
-          setCurrentImage(fullImg);
-          setOriginalImage(fullImg);
-          
-          const archive = getItem(ARCHIVE_STORAGE_KEY, []);
-          archive.unshift({ id: Date.now().toString(), type: 'Image', content: fullImg, timestamp: new Date().toISOString() });
-          setItem(ARCHIVE_STORAGE_KEY, archive);
-
-      } catch (e: any) { 
-          if (e.message?.includes("Requested entity was not found") && (window as any).aistudio) {
-              await (window as any).aistudio.openSelectKey();
-          }
-          setError(e.message);
-      } finally { setIsLoading(false); }
-  };
-
-  const executeEnhance = async () => {
-      if(!currentImage) return;
-      setIsLoading(true);
-      setError(null);
-      try {
-          // Pass the specific enhancement type
-          const res = await geminiService.enhanceImage(currentImage.split(',')[1], 'image/jpeg', enhancementMode, enhanceLevel, detectedRatio);
-          setCurrentImage(`data:image/jpeg;base64,${res}`);
-      } catch(e: any) { setError(e.message); } finally { setIsLoading(false); }
-  };
-
-  const executeSmartEdit = async () => {
-      if(!currentImage || !editPrompt) return;
-      setIsLoading(true);
-      setError(null);
-      try {
-          // Pass the detected aspect ratio
-          const res = await geminiService.smartEditImage(currentImage.split(',')[1], 'image/jpeg', editPrompt, detectedRatio);
-          setCurrentImage(`data:image/jpeg;base64,${res}`);
-          setEditPrompt('');
-      } catch(e: any) { setError(e.message); } finally { setIsLoading(false); }
-  };
-
-  const applyAutoColor = async () => {
-      if(!currentImage) return;
-      setIsLoading(true);
-      try {
-          const settings = await geminiService.analyzeForFilters(currentImage.split(',')[1], 'image/jpeg');
-          setFilters(prev => ({ ...prev, ...settings }));
-      } catch(e) { console.error(e); } finally { setIsLoading(false); }
-  };
-
-  const getFilterString = () => `brightness(${filters.brightness}%) contrast(${filters.contrast}%) saturate(${filters.saturate}%) hue-rotate(${filters.hue}deg) blur(${filters.blur}px) sepia(${filters.sepia}%)`;
-
-  const handleRetry = () => {
-      if (activeSubTab === 'create') {
-          handleGenerate();
-      } else if (originalImage) {
-          // For editing modes, "Try Again" essentially means revert to original
-          setCurrentImage(originalImage);
-          if (activeSubTab === 'color') {
-              setFilters({ brightness: 100, contrast: 100, saturate: 100, hue: 0, blur: 0, sepia: 0 });
-          }
-      }
-  };
-
-  // Compare Slider Interaction
-  const handleSliderMove = (e: any) => {
-      if (!isDraggingSlider || !compareContainerRef.current) return;
-      const rect = compareContainerRef.current.getBoundingClientRect();
-      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-      const x = Math.max(0, Math.min(clientX - rect.left, rect.width));
-      const percentage = (x / rect.width) * 100;
-      setCompareSlider(percentage);
-  };
-
-  useEffect(() => {
-      const stopDrag = () => setIsDraggingSlider(false);
-      window.addEventListener('mouseup', stopDrag);
-      window.addEventListener('touchend', stopDrag);
-      window.addEventListener('mousemove', handleSliderMove);
-      window.addEventListener('touchmove', handleSliderMove);
-      return () => {
-          window.removeEventListener('mouseup', stopDrag);
-          window.removeEventListener('touchend', stopDrag);
-          window.removeEventListener('mousemove', handleSliderMove);
-          window.removeEventListener('touchmove', handleSliderMove);
-      };
-  }, [isDraggingSlider]);
-
-  // Determine Comparison Images based on active tab
-  const getComparisonImages = () => {
-      if (activeSubTab === 'color') {
-          return {
-              beforeSrc: currentImage,
-              beforeStyle: { filter: 'none' },
-              afterSrc: currentImage,
-              afterStyle: { filter: getFilterString() }
-          };
-      } else {
-          return {
-              beforeSrc: originalImage,
-              beforeStyle: {},
-              afterSrc: currentImage,
-              afterStyle: {}
-          };
-      }
-  };
-
-  const { beforeSrc, beforeStyle, afterSrc, afterStyle } = getComparisonImages();
-  const showCompare = ['enhance', 'smart_edit', 'color'].includes(activeSubTab) && currentImage && (activeSubTab === 'color' ? true : originalImage);
-
-  return (
-    <div className="space-y-6 animate-fade-in pb-20">
-        {/* Header & Tabs */}
-        <div className="flex flex-col md:flex-row justify-between items-end border-b border-white/10 pb-4 gap-4">
-            <div>
-                <h2 className="text-3xl font-bold text-[#bf8339] flex items-center gap-2">
-                    <PhotoIcon className="w-8 h-8" /> {isAr ? 'استوديو الصور الاحترافي' : 'Image Studio Pro'}
-                </h2>
-                <p className="text-white/60 mt-1">{isAr ? 'منصة الإنتاج البصري المتكاملة' : 'Integrated Visual Production Platform'}</p>
-            </div>
-            {/* Tabs */}
-            <div className={`flex flex-wrap justify-center md:justify-end gap-2 p-1 rounded-xl ${isComfort ? 'bg-[#D7CCC8]/30' : 'bg-[#0a1e3c]'}`}>
-                {[
-                    { id: 'create', label: t.tabCreate[appLanguage], icon: <ImageIcon className="w-4 h-4"/> },
-                    { id: 'enhance', label: t.tabEnhance[appLanguage], icon: <FingerPrintIcon className="w-4 h-4"/> },
-                    { id: 'smart_edit', label: t.tabSmartEdit[appLanguage], icon: <MagicWandIcon className="w-4 h-4"/> },
-                    { id: 'color', label: t.tabColor[appLanguage], icon: <AdjustmentsHorizontalIcon className="w-4 h-4"/> },
-                    { id: 'blend', label: t.tabBlend[appLanguage], icon: <BlenderIcon className="w-4 h-4"/> }
-                ].map((tab) => (
-                    <button 
-                        key={tab.id}
-                        onClick={() => setActiveSubTab(tab.id as SubTab)} 
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg transition text-sm font-bold flex-grow md:flex-grow-0 justify-center ${
-                            activeSubTab === tab.id 
-                            ? 'bg-[#bf8339] text-[#0a1e3c] shadow-lg' 
-                            : 'text-white/60 hover:text-white hover:bg-white/5'
-                        }`}
+    // --- Helper Component for Comparison ---
+    const CompareView = () => (
+        <div className="bg-black/40 border border-[#bf8339]/30 rounded-2xl min-h-[500px] flex flex-col items-center justify-center p-6 relative group h-full">
+            {resultImage ? (
+                <>
+                    <div 
+                        ref={compareContainerRef} 
+                        className="relative max-w-full cursor-col-resize select-none shadow-2xl rounded-lg overflow-hidden"
+                        onMouseDown={() => setIsDraggingSlider(true)}
+                        onTouchStart={() => setIsDraggingSlider(true)}
+                        style={{ maxHeight: '600px' }}
                     >
-                        {tab.icon} {tab.label}
-                    </button>
-                ))}
-            </div>
-        </div>
+                        {/* Result Image (Bottom Layer - Full) */}
+                        <img src={resultImage} className="max-w-full max-h-[600px] block mx-auto" alt="Result" />
+                        
+                        {/* Source Image (Top Layer - Clipped) */}
+                        <div 
+                            className="absolute top-0 left-0 bottom-0 overflow-hidden border-r-2 border-white shadow-[2px_0_10px_rgba(0,0,0,0.5)] bg-black/10"
+                            style={{ width: `${compareSlider}%` }}
+                        >
+                            <img 
+                                src={sourceImage || ''} 
+                                className="max-w-none h-full object-contain bg-black" 
+                                style={{ width: compareContainerRef.current?.getBoundingClientRect().width }} 
+                                alt="Original" 
+                            />
+                        </div>
+                        
+                        {/* Handle */}
+                        <div 
+                            className="absolute top-1/2 -translate-y-1/2 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-lg -ml-4 z-10" 
+                            style={{ left: `${compareSlider}%` }}
+                        >
+                            <ArrowsRightLeftIcon className="w-4 h-4 text-black" />
+                        </div>
 
-        {/* --- MAIN CONTENT AREA --- */}
-        {activeSubTab === 'blend' ? (
-            /* FULL WIDTH LAYOUT FOR BLEND */
-            <div className="animate-slide-up">
-                <ImageBlenderView />
-            </div>
-        ) : (
-            /* SPLIT LAYOUT FOR OTHER TABS */
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                
-                {/* LEFT PANEL: CONTROLS */}
-                <div className="lg:col-span-4 space-y-6">
+                        {/* Labels */}
+                        <div className="absolute top-4 left-4 bg-black/60 px-2 py-1 rounded text-xs text-white pointer-events-none">{isAr ? 'قبل' : 'Before'}</div>
+                        <div className="absolute top-4 right-4 bg-[#bf8339] px-2 py-1 rounded text-xs text-[#0a1e3c] font-bold pointer-events-none">{isAr ? 'بعد' : 'After'}</div>
+                    </div>
                     
-                    {/* 1. CREATE CONTROLS */}
-                    {activeSubTab === 'create' && (
-                        <div className="space-y-4">
-                            {/* 1.1 Prompt Area & Generator */}
-                            <div className="relative">
-                                <textarea 
-                                    value={creationTopic} 
-                                    onChange={e => setCreationTopic(e.target.value)} 
-                                    className="w-full bg-black/20 border border-white/10 rounded-xl p-4 h-32 focus:border-[#bf8339] text-white placeholder-white/30 text-sm" 
-                                    placeholder={isAr ? "صف الصورة... (اختياري في حال رفع صورة مرجعية أو اختيار بيئة)" : "Describe the image... (Optional if using reference/scene)"} 
-                                />
-                                {/* Magic Button: Only active if text is present */}
-                                {creationTopic && (
-                                    <div className="absolute bottom-3 right-3 flex gap-2">
-                                        <button 
-                                            onClick={handleGeneratePrompts}
-                                            disabled={isGeneratingPrompts}
-                                            className="bg-white/10 hover:bg-[#bf8339] text-white p-2 rounded-lg transition flex items-center gap-2 text-xs backdrop-blur-md"
-                                            title={isAr ? "توليد وصف احترافي" : "Generate Prompts"}
-                                        >
-                                            {isGeneratingPrompts ? <Loader /> : <SparklesIcon className="w-4 h-4" />}
-                                            {isAr ? 'تحسين' : 'Magic'}
-                                        </button>
-                                    </div>
-                                )}
+                    <div className="mt-6 flex gap-4">
+                        <ExportMenu content={resultImage} type="image" filename={`edited-${Date.now()}`} label={isAr ? "تحميل" : "Download"} />
+                    </div>
+                </>
+            ) : sourceImage ? (
+                <div className="relative max-h-[500px]">
+                    <img src={sourceImage} className="max-h-[400px] rounded shadow-lg opacity-80" />
+                    <p className="mt-4 text-center text-white/50 text-sm">{isAr ? 'اضغط زر المعالجة لبدء التحسين' : 'Click process to start'}</p>
+                </div>
+            ) : (
+                <div 
+                    onClick={() => featureFileRef.current?.click()}
+                    className="text-center text-white/20 cursor-pointer hover:text-white/40 transition"
+                >
+                    <ImageIcon className="w-24 h-24 mx-auto mb-4 opacity-50" />
+                    <p className="text-lg">{isAr ? 'اضغط لرفع صورة' : 'Click to Upload Image'}</p>
+                </div>
+            )}
+        </div>
+    );
+
+    // --- Sub-Components for Reference Image logic in Create tab ---
+    const handleReferenceUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (referenceImages.length >= 10) return alert(isAr ? "الحد الأقصى 10 صور" : "Max 10 images");
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onloadend = () => { setCropImageSrc(reader.result as string); };
+        reader.readAsDataURL(file);
+        e.target.value = '';
+    };
+    const handleCropConfirm = (croppedBase64: string) => {
+        const base64Data = croppedBase64.split(',')[1];
+        setReferenceImages([...referenceImages, { id: Date.now().toString(), data: base64Data, mimeType: 'image/jpeg' }]);
+        setCropImageSrc(null);
+    };
+    const removeReferenceImage = (id: string) => {
+        setReferenceImages(referenceImages.filter(img => img.id !== id));
+    };
+
+    return (
+        <div className="space-y-6 animate-fade-in pb-20">
+            {/* Header & Tabs */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 border-b border-white/10 pb-4">
+                <div>
+                    <h2 className="text-3xl font-bold text-[#bf8339] flex items-center gap-2">
+                        <ImageIcon className="w-8 h-8" /> 
+                        {t.imageStudio[appLanguage]}
+                    </h2>
+                    <p className="text-white/60 mt-1">
+                        {isAr ? 'منصة متكاملة لتوليد وتحرير ودمج الصور بالذكاء الاصطناعي.' : 'All-in-one platform for AI image generation, editing, and blending.'}
+                    </p>
+                </div>
+                
+                <div className="flex flex-wrap bg-[#0a1e3c] p-1 rounded-lg gap-1">
+                    <button onClick={() => setActiveSubTab('create')} className={`flex items-center gap-2 px-4 py-2 rounded-md transition text-sm font-bold ${activeSubTab === 'create' ? 'bg-[#bf8339] text-[#0a1e3c]' : 'text-white/70 hover:text-white hover:bg-white/5'}`}>
+                        <SparklesIcon className="w-4 h-4"/> {t.tabCreate[appLanguage]}
+                    </button>
+                    <button onClick={() => setActiveSubTab('color')} className={`flex items-center gap-2 px-4 py-2 rounded-md transition text-sm font-bold ${activeSubTab === 'color' ? 'bg-[#bf8339] text-[#0a1e3c]' : 'text-white/70 hover:text-white hover:bg-white/5'}`}>
+                        <AdjustmentsIcon className="w-4 h-4"/> {t.tabColor[appLanguage]}
+                    </button>
+                    <button onClick={() => setActiveSubTab('upscale')} className={`flex items-center gap-2 px-4 py-2 rounded-md transition text-sm font-bold ${activeSubTab === 'upscale' ? 'bg-[#bf8339] text-[#0a1e3c]' : 'text-white/70 hover:text-white hover:bg-white/5'}`}>
+                        <ScaleIcon className="w-4 h-4"/> {t.tabUpscale[appLanguage]}
+                    </button>
+                    <button onClick={() => setActiveSubTab('restore')} className={`flex items-center gap-2 px-4 py-2 rounded-md transition text-sm font-bold ${activeSubTab === 'restore' ? 'bg-[#bf8339] text-[#0a1e3c]' : 'text-white/70 hover:text-white hover:bg-white/5'}`}>
+                        <RefreshIcon className="w-4 h-4"/> {t.tabRestore[appLanguage]}
+                    </button>
+                    <button onClick={() => setActiveSubTab('blend')} className={`flex items-center gap-2 px-4 py-2 rounded-md transition text-sm font-bold ${activeSubTab === 'blend' ? 'bg-[#bf8339] text-[#0a1e3c]' : 'text-white/70 hover:text-white hover:bg-white/5'}`}>
+                        <BlenderIcon className="w-4 h-4"/> {t.tabBlend[appLanguage]}
+                    </button>
+                </div>
+            </div>
+
+            {/* --- CREATE TAB --- */}
+            {activeSubTab === 'create' && (
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                    {/* Controls */}
+                    <div className="lg:col-span-5 space-y-6">
+                        <div className="bg-[#0a1e3c]/60 backdrop-blur border border-white/10 rounded-xl p-5 shadow-lg">
+                            <textarea 
+                                value={prompt}
+                                onChange={e => setPrompt(e.target.value)}
+                                className="w-full bg-black/20 border border-white/10 rounded-lg p-3 text-white focus:border-[#bf8339] h-24 text-sm mb-4 placeholder-white/30"
+                                placeholder={isAr ? "صف الصورة التي تريد إنشاءها..." : "Describe the image you want to create..."}
+                            />
+                            <div className="space-y-4 mb-4">
+                                <CustomGroupedSelect label={isAr ? "الأبعاد" : "Aspect Ratio"} value={aspectRatio} onChange={setAspectRatio} groups={aspectRatioGroups} placeholder="Select Ratio" />
+                                <CustomGroupedSelect label={isAr ? "النمط" : "Style"} value={style} onChange={setStyle} groups={styleGroups} placeholder="Select Style" />
                             </div>
-
-                            {/* Generated Prompts List */}
-                            {promptVariations.length > 0 && (
-                                <div className="bg-[#0a1e3c]/80 border border-[#bf8339]/30 rounded-xl p-3 animate-fade-in">
-                                    <div className="flex justify-between items-center mb-2">
-                                        <span className="text-xs text-[#bf8339] font-bold">{isAr ? 'مقترحات الذكاء الاصطناعي' : 'AI Suggestions'}</span>
-                                        <button onClick={() => setPromptVariations([])} className="text-white/40 hover:text-white">×</button>
-                                    </div>
-                                    <div className="space-y-2">
-                                        {promptVariations.map((p, idx) => (
-                                            <div key={idx} className="text-[10px] bg-white/5 p-2 rounded border border-white/5 flex gap-2 items-start group">
-                                                <p className="flex-1 text-white/80 line-clamp-2 hover:line-clamp-none transition-all cursor-pointer" onClick={() => setCreationTopic(p)}>{p}</p>
-                                                <CopyButton text={p} className="opacity-0 group-hover:opacity-100" />
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Reference Image */}
-                            <div className="bg-[#0a1e3c]/60 backdrop-blur border border-white/10 rounded-xl p-5 shadow-lg">
-                                <div className="flex justify-between items-center mb-2">
-                                    <h3 className="text-[#bf8339] font-bold text-xs uppercase tracking-widest">{isAr ? 'صور مرجعية' : 'Reference Images'}</h3>
-                                    <span className="text-[10px] text-white/50">{referenceImages.length}/10</span>
-                                </div>
-                                <div className="grid grid-cols-5 gap-2">
-                                    {referenceImages.map((ref) => (
-                                        <div key={ref.id} className="aspect-square relative group">
-                                            <img src={`data:${ref.mimeType};base64,${ref.data}`} className="w-full h-full object-cover rounded border border-white/10" />
-                                            <button onClick={() => removeReference(ref.id)} className="absolute top-0 right-0 bg-red-500 text-white rounded-bl-lg w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition text-xs shadow-md">×</button>
-                                        </div>
-                                    ))}
-                                    {referenceImages.length < 10 && (
-                                        <div onClick={() => referenceFileRef.current?.click()} className="aspect-square border-2 border-dashed border-white/20 rounded flex items-center justify-center cursor-pointer hover:border-[#bf8339] text-white/30 hover:text-[#bf8339] text-xl transition">+</div>
-                                    )}
-                                </div>
-                                <input type="file" ref={referenceFileRef} onChange={handleReferenceUpload} className="hidden" accept="image/*" />
-                            </div>
-
-                            <div className="bg-[#0a1e3c]/60 backdrop-blur border border-white/10 rounded-xl p-5 shadow-lg">
-                                <h3 className="text-[#bf8339] font-bold mb-4 text-xs uppercase tracking-widest">{isAr ? 'إعدادات التوليد' : 'Generation Settings'}</h3>
-                                <div className="space-y-3">
-                                    {/* Quality Toggle */}
-                                    <div className="flex bg-white/5 rounded-lg p-1">
-                                        <button 
-                                            onClick={() => setIsHD(false)} 
-                                            className={`flex-1 py-1.5 rounded text-xs font-bold transition ${!isHD ? 'bg-[#bf8339] text-[#0a1e3c]' : 'text-white/60 hover:text-white'}`}
-                                        >
-                                            {isAr ? 'قياسي (سريع)' : 'Standard (Fast)'}
-                                        </button>
-                                        <button 
-                                            onClick={() => setIsHD(true)} 
-                                            className={`flex-1 py-1.5 rounded text-xs font-bold transition ${isHD ? 'bg-[#bf8339] text-[#0a1e3c]' : 'text-white/60 hover:text-white'}`}
-                                        >
-                                            {isAr ? 'دقة عالية (2K HD)' : 'Pro HD (2K)'}
-                                        </button>
-                                    </div>
-                                    <CustomGroupedSelect label={isAr ? "الأبعاد" : "Aspect Ratio"} value={aspectRatio} onChange={setAspectRatio} groups={aspectRatioGroups} placeholder="Select Ratio" />
-                                    <CustomGroupedSelect label={isAr ? "النمط الفني" : "Art Style"} value={style} onChange={setStyle} groups={styleGroups} placeholder="Select Style" />
-                                </div>
-                            </div>
-
-                            {/* Visual Presets - UPDATED TO DROPDOWNS */}
-                            <div className="bg-[#0a1e3c]/60 backdrop-blur border border-white/10 rounded-xl p-5 shadow-lg">
-                                <h3 className="text-[#bf8339] font-bold mb-4 text-xs uppercase tracking-widest flex justify-between">
-                                    {isAr ? 'الإخراج البصري' : 'Visual Output'}
-                                    <span className="text-[9px] text-white/40 font-normal">{isAr ? 'اضغط للإلغاء' : 'Click to deselect'}</span>
-                                </h3>
-                                
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                                    <CustomGroupedSelect
-                                        label={isAr ? 'زوايا التصوير' : 'Camera Angle'}
-                                        value={cameraAngle}
-                                        onChange={setCameraAngle}
-                                        groups={cameraAngleGroups}
-                                        placeholder={isAr ? "اختر الزاوية..." : "Select Angle..."}
-                                    />
-                                    <CustomGroupedSelect
-                                        label={isAr ? 'الإضاءة' : 'Lighting'}
-                                        value={lighting}
-                                        onChange={setLighting}
-                                        groups={lightingGroups}
-                                        placeholder={isAr ? "اختر الإضاءة..." : "Select Lighting..."}
-                                    />
-                                </div>
-
-                                {/* Scenes */}
-                                <div>
-                                    <CustomGroupedSelect
-                                        label={isAr ? 'بيئة عرض المنتج (Product Scene)' : 'Product Scene Library'}
-                                        value={productScene}
-                                        onChange={setProductScene}
-                                        groups={productSceneGroups}
-                                        placeholder={isAr ? "اختر المشهد..." : "Select Scene..."}
-                                    />
-                                </div>
-                            </div>
-                            
-                            <Button onClick={handleGenerate} isLoading={isLoading} className="w-full py-3 shadow-lg shadow-[#bf8339]/20">
-                                {isAr ? (isHD ? 'توليد بجودة عالية (Pro)' : 'توليد الصورة') : (isHD ? 'Generate HD (Pro)' : 'Generate Image')}
-                            </Button>
+                            <label className="flex items-center justify-between p-3 bg-white/5 rounded-lg cursor-pointer border border-white/5 hover:border-[#bf8339]/30">
+                                <span className="text-sm font-bold text-white flex items-center gap-2">
+                                    <SparklesIcon className="w-4 h-4 text-[#bf8339]" />
+                                    {isAr ? 'جودة عالية (HD Mode)' : 'HD Mode'}
+                                </span>
+                                <input type="checkbox" checked={isHD} onChange={e => setIsHD(e.target.checked)} className="accent-[#bf8339] w-5 h-5" />
+                            </label>
                         </div>
-                    )}
 
-                    {/* 2. ENHANCE CONTROLS */}
-                    {activeSubTab === 'enhance' && (
-                        <div className="bg-[#0a1e3c]/60 backdrop-blur border border-white/10 rounded-xl p-5 shadow-lg h-fit">
-                            <div className="border-2 border-dashed border-white/20 rounded-xl p-6 text-center cursor-pointer hover:border-[#bf8339] mb-6" onClick={() => uploadFileRef.current?.click()}>
-                                <FingerPrintIcon className="w-8 h-8 text-white/30 mx-auto mb-2" />
-                                <p className="text-xs text-white/50">{isAr ? 'رفع صورة للتحسين' : 'Upload to Enhance'}</p>
-                                <input type="file" ref={uploadFileRef} onChange={handleGlobalUpload} className="hidden" />
+                        {/* Reference Images */}
+                        <div className="bg-[#0a1e3c]/60 backdrop-blur border border-white/10 rounded-xl p-5 shadow-lg">
+                            <div className="flex justify-between items-center mb-4 border-b border-white/10 pb-2">
+                                <h3 className="text-[#bf8339] font-bold text-sm">{isAr ? 'صور مرجعية (اختياري)' : 'Reference Images (Optional)'}</h3>
+                                <span className="text-[10px] text-white/50">{referenceImages.length}/10</span>
                             </div>
-                            
-                            {/* Auto-detected ratio display */}
-                            {currentImage && (
-                                <div className="mb-4 text-center">
-                                    <span className="text-[10px] text-white/40 bg-white/5 px-2 py-1 rounded">
-                                        {isAr ? `الأبعاد المكتشفة: ${detectedRatio}` : `Detected Ratio: ${detectedRatio}`}
-                                    </span>
-                                </div>
-                            )}
-
-                            {/* Enhancement Mode Selection */}
-                            <div className="mb-4 space-y-2">
-                                <label className="text-xs text-white/60">{isAr ? 'نوع التحسين' : 'Enhancement Mode'}</label>
-                                <div className="grid grid-cols-1 gap-2">
-                                    <button 
-                                        onClick={() => setEnhancementMode('General')} 
-                                        className={`p-3 rounded-lg flex items-center gap-3 transition border ${enhancementMode === 'General' ? 'bg-[#bf8339] border-[#bf8339] text-[#0a1e3c]' : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10'}`}
-                                    >
-                                        <SparklesIcon className="w-5 h-5" />
-                                        <div className="text-left">
-                                            <div className="text-sm font-bold">{t.enhanceModeGeneral[appLanguage]}</div>
-                                        </div>
-                                    </button>
-                                    <button 
-                                        onClick={() => setEnhancementMode('Deblur')} 
-                                        className={`p-3 rounded-lg flex items-center gap-3 transition border ${enhancementMode === 'Deblur' ? 'bg-[#bf8339] border-[#bf8339] text-[#0a1e3c]' : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10'}`}
-                                    >
-                                        <EyeIcon className="w-5 h-5" />
-                                        <div className="text-left">
-                                            <div className="text-sm font-bold">{t.enhanceModeDeblur[appLanguage]}</div>
-                                        </div>
-                                    </button>
-                                    <button 
-                                        onClick={() => setEnhancementMode('Restore')} 
-                                        className={`p-3 rounded-lg flex items-center gap-3 transition border ${enhancementMode === 'Restore' ? 'bg-[#bf8339] border-[#bf8339] text-[#0a1e3c]' : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10'}`}
-                                    >
-                                        <MagicWandIcon className="w-5 h-5" />
-                                        <div className="text-left">
-                                            <div className="text-sm font-bold">{t.enhanceModeRestore[appLanguage]}</div>
-                                        </div>
-                                    </button>
-                                </div>
-                            </div>
-
-                            {enhancementMode === 'General' && (
-                                <div className="flex bg-black/20 p-1 rounded-lg mb-6">
-                                    {['Soft', 'Medium', 'Strong'].map((lvl) => (
-                                        <button key={lvl} onClick={() => setEnhanceLevel(lvl)} className={`flex-1 py-2 rounded text-xs font-bold transition ${enhanceLevel === lvl ? 'bg-[#bf8339] text-[#0a1e3c]' : 'text-white/50'}`}>{lvl}</button>
-                                    ))}
-                                </div>
-                            )}
-
-                            <Button onClick={executeEnhance} isLoading={isLoading} disabled={!currentImage} className="w-full">
-                                {isAr ? 'بدء المعالجة' : 'Start Processing'}
-                            </Button>
-                        </div>
-                    )}
-
-                    {/* 3. SMART EDIT CONTROLS */}
-                    {activeSubTab === 'smart_edit' && (
-                        <div className="bg-[#0a1e3c]/60 backdrop-blur border border-white/10 rounded-xl p-5 shadow-lg h-fit">
-                            <div className="border-2 border-dashed border-white/20 rounded-xl p-6 text-center cursor-pointer hover:border-[#bf8339] mb-4" onClick={() => uploadFileRef.current?.click()}>
-                                {currentImage ? <img src={currentImage} className="h-16 mx-auto rounded object-cover" /> : <p className="text-xs text-white/50">{isAr ? 'رفع صورة' : 'Upload'}</p>}
-                                <input type="file" ref={uploadFileRef} onChange={handleGlobalUpload} className="hidden" />
-                            </div>
-                            
-                            {currentImage && (
-                                <div className="mb-4 text-center">
-                                    <span className="text-[10px] text-white/40 bg-white/5 px-2 py-1 rounded">
-                                        {isAr ? `الأبعاد المكتشفة: ${detectedRatio}` : `Detected Ratio: ${detectedRatio}`}
-                                    </span>
-                                </div>
-                            )}
-
-                            <textarea value={editPrompt} onChange={e => setEditPrompt(e.target.value)} className="w-full bg-black/20 border border-white/10 rounded-lg p-3 h-24 text-sm text-white mb-4 placeholder-white/30" placeholder={isAr ? "مثال: غير الخلفية إلى أحمر..." : "e.g., Change background to red..."} />
-                            <Button onClick={executeSmartEdit} isLoading={isLoading} disabled={!currentImage} className="w-full">{isAr ? 'تطبيق التعديل' : 'Apply Edit'}</Button>
-                        </div>
-                    )}
-
-                    {/* 4. COLOR CONTROLS */}
-                    {activeSubTab === 'color' && (
-                        <div className="bg-[#0a1e3c]/60 backdrop-blur border border-white/10 rounded-xl p-5 shadow-lg h-fit">
-                            <div className="space-y-4 mb-6">
-                                {['brightness', 'contrast', 'saturate', 'sepia', 'blur'].map(k => (
-                                    <div key={k}>
-                                        <div className="flex justify-between text-xs text-white/70 mb-1">
-                                            <span className="capitalize">{k}</span>
-                                            <span>{(filters as any)[k]}</span>
-                                        </div>
-                                        <input type="range" min="0" max={k === 'blur' ? 10 : 200} value={(filters as any)[k]} onChange={e => setFilters({...filters, [k]: Number(e.target.value)})} className="w-full accent-[#bf8339]" />
+                            <div className="grid grid-cols-4 gap-2">
+                                {referenceImages.map((ref) => (
+                                    <div key={ref.id} className="relative group aspect-square">
+                                        <img src={`data:${ref.mimeType};base64,${ref.data}`} className="w-full h-full object-cover rounded border border-white/10" />
+                                        <button onClick={() => removeReferenceImage(ref.id)} className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition shadow-md z-10"><TrashIcon className="w-3 h-3 text-white" /></button>
                                     </div>
                                 ))}
+                                {referenceImages.length < 10 && (
+                                    <div onClick={() => referenceFileRef.current?.click()} className="aspect-square border-2 border-dashed border-white/20 rounded flex items-center justify-center cursor-pointer hover:bg-white/5 hover:border-[#bf8339] text-xl text-white/30 hover:text-[#bf8339] transition">+</div>
+                                )}
                             </div>
-                            <Button onClick={applyAutoColor} isLoading={isLoading} variant="secondary" className="w-full mb-2 text-xs"><SparklesIcon className="w-3 h-3 mr-1"/> {isAr ? 'تصحيح تلقائي' : 'Auto Fix'}</Button>
+                            <input type="file" ref={referenceFileRef} onChange={handleReferenceUpload} className="hidden" accept="image/*" />
                         </div>
-                    )}
-                </div>
 
-                {/* RIGHT PANEL: PREVIEW & EXPORT */}
-                <div className="lg:col-span-8 space-y-6">
-                    {/* Canvas / Preview */}
-                    <div className="bg-black/40 rounded-xl border border-white/10 flex items-center justify-center p-6 min-h-[500px] relative group overflow-hidden">
-                        {showCompare && afterSrc ? (
-                            /* BEFORE / AFTER COMPARE SLIDER */
-                            <div 
-                                ref={compareContainerRef} 
-                                className="relative max-w-full max-h-[600px] cursor-col-resize select-none shadow-2xl rounded-lg overflow-hidden"
-                                onMouseDown={() => setIsDraggingSlider(true)}
-                                onTouchStart={() => setIsDraggingSlider(true)}
-                            >
-                                {/* After Image (Right/Bottom) */}
-                                <img src={afterSrc} className="max-w-full max-h-[600px] block" style={afterStyle} alt="After" />
-                                
-                                {/* Before Image (Left/Top Overlay) */}
-                                <div 
-                                    className="absolute top-0 left-0 bottom-0 overflow-hidden border-r-2 border-white shadow-[2px_0_10px_rgba(0,0,0,0.5)] bg-black/10"
-                                    style={{ width: `${compareSlider}%` }}
-                                >
-                                    <img 
-                                        src={beforeSrc || afterSrc} 
-                                        className="max-w-none h-full" 
-                                        style={{ width: compareContainerRef.current?.getBoundingClientRect().width, ...beforeStyle }} 
-                                        alt="Before" 
-                                    />
-                                </div>
-                                
-                                <div className="absolute top-1/2 -translate-y-1/2 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-lg -ml-4 z-10" style={{ left: `${compareSlider}%` }}>
-                                    <ArrowsRightLeftIcon className="w-4 h-4 text-black" />
-                                </div>
-                                <div className="absolute top-4 left-4 bg-black/60 px-2 py-1 rounded text-xs text-white">{isAr ? 'قبل' : 'Before'}</div>
-                                <div className="absolute top-4 right-4 bg-[#bf8339] px-2 py-1 rounded text-xs text-[#0a1e3c] font-bold">{isAr ? 'بعد' : 'After'}</div>
+                        <div className="bg-[#0a1e3c]/60 backdrop-blur border border-white/10 rounded-xl p-5 shadow-lg">
+                            <h3 className="text-[#bf8339] font-bold mb-4 text-xs uppercase tracking-widest">{isAr ? 'الإخراج البصري' : 'Visual Output'}</h3>
+                            <div className="space-y-4">
+                                <CustomGroupedSelect label={isAr ? 'زوايا التصوير' : 'Camera Angle'} value={cameraAngle} onChange={setCameraAngle} groups={cameraAngleGroups} placeholder={isAr ? "اختر الزاوية..." : "Select Angle..."} />
+                                <CustomGroupedSelect label={isAr ? 'الإضاءة' : 'Lighting'} value={lighting} onChange={setLighting} groups={lightingGroups} placeholder={isAr ? "اختر الإضاءة..." : "Select Lighting..."} />
+                                <CustomGroupedSelect label={isAr ? 'بيئة المنتج' : 'Product Scene'} value={productScene} onChange={setProductScene} groups={productSceneGroups} placeholder={isAr ? "اختر المشهد..." : "Select Scene..."} />
                             </div>
-                        ) : (
-                            currentImage ? (
-                                <>
-                                    <img 
-                                        src={currentImage} 
-                                        className="max-w-full max-h-[600px] rounded-lg shadow-2xl transition-all duration-200" 
-                                        style={activeSubTab === 'color' ? { filter: getFilterString() } : {}}
-                                    />
-                                </>
-                            ) : error ? (
-                                <div className="text-center p-6 bg-red-500/10 border border-red-500/50 rounded-xl max-w-md mx-auto animate-fade-in">
-                                    <div className="text-4xl mb-4">🚫</div>
-                                    <p className="text-red-400 font-bold mb-2">{isAr ? 'عذراً' : 'Error'}</p>
-                                    <p className="text-white/80 text-sm">{error}</p>
-                                </div>
-                            ) : (
-                                <div className="text-center text-white/30">
-                                    <PhotoIcon className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                                    <p>{isAr ? 'منطقة المعاينة' : 'Preview Area'}</p>
-                                </div>
-                            )
-                        )}
+                        </div>
                         
-                        {/* Hidden Canvas for Processing */}
-                        <canvas ref={canvasRef} className="hidden" />
+                        <Button onClick={handleGenerate} isLoading={isLoading} className="w-full py-3 shadow-lg shadow-[#bf8339]/20">
+                            {isAr ? (isHD ? 'توليد بجودة عالية (Pro)' : 'توليد الصورة') : (isHD ? 'Generate HD (Pro)' : 'Generate Image')}
+                        </Button>
                     </div>
 
-                    {/* Export Panel (Only if image exists and not in blend mode) */}
-                    {currentImage && (
-                        <div className="bg-[#0a1e3c]/80 backdrop-blur border border-[#bf8339]/30 rounded-xl p-4 flex flex-col md:flex-row items-center justify-between gap-4 shadow-xl animate-slide-up">
-                            <div className="flex items-center gap-3">
-                                <div className="bg-[#bf8339]/20 p-2 rounded-lg"><PhotoIcon className="w-5 h-5 text-[#bf8339]" /></div>
+                    {/* Result */}
+                    <div className="lg:col-span-7">
+                        <div className="bg-black/40 border border-[#bf8339]/30 rounded-2xl min-h-[500px] flex flex-col items-center justify-center p-6 relative group h-full">
+                            {generatedImage ? (
+                                <>
+                                    <img src={generatedImage} className="max-w-full max-h-[600px] rounded-lg shadow-2xl" alt="Generated" />
+                                    <div className="absolute bottom-4 right-4 flex gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                        <ExportMenu content={generatedImage} type="image" filename={`ai-image-${Date.now()}`} label={isAr ? "تحميل" : "Download"} />
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="text-center text-white/20">
+                                    <ImageIcon className="w-24 h-24 mx-auto mb-4 opacity-50" />
+                                    <p className="text-lg">{isAr ? 'مساحة العرض' : 'Preview Area'}</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* --- COLOR CORRECTION TAB --- */}
+            {activeSubTab === 'color' && (
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                    <div className="lg:col-span-4 space-y-6">
+                        <div className="bg-[#0a1e3c]/60 backdrop-blur border border-white/10 rounded-xl p-5">
+                            <h3 className="text-[#bf8339] font-bold mb-4 flex items-center gap-2">{isAr ? 'تعديل الألوان' : 'Color Correction'}</h3>
+                            
+                            <div onClick={() => featureFileRef.current?.click()} className="border-2 border-dashed border-white/20 rounded-lg p-4 text-center cursor-pointer hover:border-[#bf8339] mb-6">
+                                <p className="text-xs text-white/70">{sourceImage ? (isAr ? 'تغيير الصورة' : 'Change Image') : (isAr ? 'ارفع صورة للتعديل' : 'Upload Image')}</p>
+                            </div>
+
+                            <div className="space-y-4">
                                 <div>
-                                    <h4 className="font-bold text-white text-sm">{isAr ? 'النتيجة النهائية' : 'Final Result'}</h4>
-                                    <p className="text-[10px] text-white/50">{isAr ? 'تم المعالجة بنجاح' : 'Processed Successfully'}</p>
+                                    <label className="text-xs text-white/60 mb-1 flex justify-between"><span>{isAr ? 'الإضاءة' : 'Brightness'}</span> <span>{brightness > 0 ? '+' : ''}{brightness}</span></label>
+                                    <input type="range" min="-50" max="50" value={brightness} onChange={e => setBrightness(Number(e.target.value))} className="w-full accent-[#bf8339]" />
+                                </div>
+                                <div>
+                                    <label className="text-xs text-white/60 mb-1 flex justify-between"><span>{isAr ? 'التباين' : 'Contrast'}</span> <span>{contrast > 0 ? '+' : ''}{contrast}</span></label>
+                                    <input type="range" min="-50" max="50" value={contrast} onChange={e => setContrast(Number(e.target.value))} className="w-full accent-[#bf8339]" />
+                                </div>
+                                <div>
+                                    <label className="text-xs text-white/60 mb-1 flex justify-between"><span>{isAr ? 'التشبع' : 'Saturation'}</span> <span>{saturation > 0 ? '+' : ''}{saturation}</span></label>
+                                    <input type="range" min="-50" max="50" value={saturation} onChange={e => setSaturation(Number(e.target.value))} className="w-full accent-[#bf8339]" />
                                 </div>
                             </div>
-                            
-                            <div className="flex flex-wrap gap-3 justify-center">
-                                {/* Export Button */}
-                                <ExportMenu content={currentImage} type="image" filename={`ai-image-${Date.now()}`} label={isAr ? "تحميل الصورة" : "Download Image"} />
 
-                                {/* Try Again Button */}
-                                <button 
-                                    onClick={handleRetry}
-                                    className="px-6 py-2.5 bg-white/10 hover:bg-white/20 text-white border border-white/10 rounded-lg text-sm font-bold transition flex items-center gap-2"
-                                >
-                                    <ArrowsRightLeftIcon className="w-4 h-4" />
-                                    {isAr ? 'محاولة أخرى' : 'Try Again'}
-                                </button>
+                            <div className="grid grid-cols-3 gap-2 mt-6">
+                                {['Natural', 'Warm', 'Cold', 'Cinematic', 'Product'].map(p => (
+                                    <button 
+                                        key={p} 
+                                        onClick={() => setColorPreset(p)}
+                                        className={`text-[10px] py-1 rounded border ${colorPreset === p ? 'bg-[#bf8339] text-[#0a1e3c] border-[#bf8339]' : 'border-white/10 hover:bg-white/10'}`}
+                                    >
+                                        {p}
+                                    </button>
+                                ))}
                             </div>
-                        </div>
-                    )}
-                </div>
-            </div>
-        )}
 
-        {/* IMAGE CROPPER MODAL */}
-        {cropImageSrc && (
-            <ImageCropperModal
-                imageSrc={cropImageSrc}
-                onCrop={handleCropConfirm}
-                onCancel={() => setCropImageSrc(null)}
-                isAr={isAr}
-                aspectRatio={aspectRatio === '1:1' ? 1 : aspectRatio === '16:9' ? 16/9 : aspectRatio === '9:16' ? 9/16 : aspectRatio === '3:4' ? 3/4 : 4/3}
-            />
-        )}
-    </div>
-  );
+                            <Button onClick={handleProcessImage} isLoading={isLoading} className="w-full mt-6">
+                                {isAr ? 'تطبيق التعديلات' : 'Apply Auto Color Fix'}
+                            </Button>
+                        </div>
+                    </div>
+                    <div className="lg:col-span-8 h-[600px]"><CompareView /></div>
+                </div>
+            )}
+
+            {/* --- UPSCALE TAB --- */}
+            {activeSubTab === 'upscale' && (
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                    <div className="lg:col-span-4 space-y-6">
+                        <div className="bg-[#0a1e3c]/60 backdrop-blur border border-white/10 rounded-xl p-5">
+                            <h3 className="text-[#bf8339] font-bold mb-4 flex items-center gap-2">{isAr ? 'رفع الجودة (Super Resolution)' : 'Upscale'}</h3>
+                            
+                            <div onClick={() => featureFileRef.current?.click()} className="border-2 border-dashed border-white/20 rounded-lg p-4 text-center cursor-pointer hover:border-[#bf8339] mb-6">
+                                <p className="text-xs text-white/70">{sourceImage ? (isAr ? 'تغيير الصورة' : 'Change Image') : (isAr ? 'ارفع صورة للتحسين' : 'Upload Image')}</p>
+                            </div>
+
+                            <div className="flex gap-2 mb-6">
+                                {['2x', '4x', '8x'].map((level) => (
+                                    <button 
+                                        key={level}
+                                        onClick={() => setUpscaleLevel(level as any)}
+                                        className={`flex-1 py-2 rounded border transition ${upscaleLevel === level ? 'bg-[#bf8339] text-[#0a1e3c] border-[#bf8339] font-bold' : 'border-white/10 hover:bg-white/10'}`}
+                                    >
+                                        {level}
+                                    </button>
+                                ))}
+                            </div>
+
+                            <div className="bg-white/5 p-3 rounded text-xs text-white/60 mb-6">
+                                <p>✨ {isAr ? 'تحسين التفاصيل الدقيقة' : 'Micro-Detail Enhancement'}</p>
+                                <p>🔇 {isAr ? 'إزالة التشويش والضوضاء' : 'AI Noise Reduction'}</p>
+                                <p>🧠 {isAr ? 'الحفاظ على الملامح' : 'Facial Detail Preservation'}</p>
+                            </div>
+
+                            <Button onClick={handleProcessImage} isLoading={isLoading} className="w-full">
+                                {isAr ? 'تحسين فائق الدقة (AI Ultra Enhance)' : 'AI Ultra Enhance'}
+                            </Button>
+                        </div>
+                    </div>
+                    <div className="lg:col-span-8 h-[600px]"><CompareView /></div>
+                </div>
+            )}
+
+            {/* --- RESTORE TAB --- */}
+            {activeSubTab === 'restore' && (
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                    <div className="lg:col-span-4 space-y-6">
+                        <div className="bg-[#0a1e3c]/60 backdrop-blur border border-white/10 rounded-xl p-5">
+                            <h3 className="text-[#bf8339] font-bold mb-4 flex items-center gap-2">{isAr ? 'استعادة الصور' : 'Image Restoration'}</h3>
+                            
+                            <div onClick={() => featureFileRef.current?.click()} className="border-2 border-dashed border-white/20 rounded-lg p-4 text-center cursor-pointer hover:border-[#bf8339] mb-6">
+                                <p className="text-xs text-white/70">{sourceImage ? (isAr ? 'تغيير الصورة' : 'Change Image') : (isAr ? 'ارفع صورة قديمة/تالفة' : 'Upload Old/Damaged Photo')}</p>
+                            </div>
+
+                            <div className="text-xs text-white/60 space-y-2 mb-6">
+                                <p>💎 {isAr ? 'جودة 8K Ultra-HD' : '8K Ultra-HD Quality'}</p>
+                                <p>👤 {isAr ? 'الحفاظ على الملامح بنسبة 1000%' : '1000% Face Preservation'}</p>
+                                <p>🚫 {isAr ? 'بدون تغيير في الخلفية أو الألوان' : 'No Background/Color Shift'}</p>
+                            </div>
+
+                            <Button onClick={handleProcessImage} isLoading={isLoading} className="w-full bg-gradient-to-r from-[#bf8339] to-[#d69545]">
+                                {isAr ? 'تحسين الصورة (Enhance)' : 'Enhance Image'}
+                            </Button>
+                        </div>
+                    </div>
+                    <div className="lg:col-span-8 h-[600px]"><CompareView /></div>
+                </div>
+            )}
+
+            {activeSubTab === 'blend' && <ImageBlenderView />}
+
+            <input type="file" ref={featureFileRef} onChange={handleFeatureUpload} className="hidden" accept="image/*" />
+
+            {/* CROPPER MODAL */}
+            {cropImageSrc && (
+                <ImageCropperModal
+                    imageSrc={cropImageSrc}
+                    onCrop={handleCropConfirm}
+                    onCancel={() => setCropImageSrc(null)}
+                    isAr={isAr}
+                />
+            )}
+        </div>
+    );
 };
 
 export default AIImagesView;

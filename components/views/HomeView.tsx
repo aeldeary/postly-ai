@@ -6,7 +6,7 @@ import {
   CreatePostIcon, WebsiteIcon, ImageIcon, StyleIcon, ArchiveIcon, 
   LightBulbIcon, DocumentTextIcon, MagicWandIcon, PaintBrushIcon, 
   TemplateIcon, ChartBarIcon, VideoCameraIcon, SpeakerWaveIcon, 
-  ShoppingBagIcon, CogIcon, InfoIcon, PostlyLogo
+  ShoppingBagIcon, CogIcon, InfoIcon, PostlyLogo, WorkflowIcon
 } from '../Icons';
 
 interface HomeViewProps {

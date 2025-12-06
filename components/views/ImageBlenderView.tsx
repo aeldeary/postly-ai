@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useContext, useMemo } from 'react';
 import { ProjectContext } from '../../contexts/ProjectContext';
 import { UI_TRANSLATIONS, ASPECT_RATIOS_GROUPED } from '../../constants';
@@ -59,7 +58,7 @@ const ImageBlenderView: React.FC = () => {
         options: g.options.map(o => ({ 
             label: isAr ? o.label.ar : o.label.en, 
             value: o.value,
-            description: o.desc 
+            description: o.description 
         }))
     })), [isAr]);
 

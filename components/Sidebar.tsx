@@ -3,7 +3,7 @@ import React, { useContext } from 'react';
 import { Tab } from '../types';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { UI_TRANSLATIONS } from '../constants';
-import { HomeIcon, CreatePostIcon, WebsiteIcon, ImageIcon, StyleIcon, ArchiveIcon, InfoIcon, MagicWandIcon, LightBulbIcon, VideoCameraIcon, SpeakerWaveIcon, DocumentTextIcon, CogIcon, PaintBrushIcon, ChartBarIcon, TemplateIcon, ShoppingBagIcon, PostlyLogo } from './Icons';
+import { HomeIcon, CreatePostIcon, WebsiteIcon, ImageIcon, StyleIcon, ArchiveIcon, InfoIcon, MagicWandIcon, LightBulbIcon, VideoCameraIcon, SpeakerWaveIcon, DocumentTextIcon, CogIcon, PaintBrushIcon, ChartBarIcon, TemplateIcon, ShoppingBagIcon, PostlyLogo, WorkflowIcon } from './Icons';
 
 interface SidebarProps {
   activeTab: Tab;

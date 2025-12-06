@@ -7,6 +7,7 @@ export enum Tab {
   WebsiteContent = 'Website Content',
   AIImages = 'Image Studio',
   ProfessionalProduct = 'Professional Product',
+  PostlySpaces = 'Postly Spaces',
   CreateVideo = 'Create Video',
   CreateAudio = 'Create Audio',
   BrandKit = 'Brand Kit',
@@ -125,7 +126,7 @@ export interface CreativeIdea {
 
 export interface ArchivedItem {
   id: string;
-  type: 'Post' | 'Website' | 'Image' | 'Idea' | 'Reel' | 'Ad' | 'BrandKit' | 'EditedImage' | 'CreativeIdea' | 'Video' | 'Summary' | 'Audio' | 'GraphicDesign' | 'Infographic' | 'ProductPhoto';
+  type: 'Post' | 'Website' | 'Image' | 'Idea' | 'Reel' | 'Ad' | 'BrandKit' | 'EditedImage' | 'CreativeIdea' | 'Video' | 'Summary' | 'Audio' | 'GraphicDesign' | 'Infographic' | 'ProductPhoto' | 'PostlySpaces';
   content: any;
   timestamp: string;
 }

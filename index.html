@@ -14,6 +14,13 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Almarai:wght@300;400;700;800&family=Cairo:wght@200..1000&family=Changa:wght@200..800&family=El+Messiri:wght@400..700&family=Lalezar&family=Lateef:wght@200;300;400;500;600;700;800&family=Lemonada:wght@300..700&family=Mada:wght@200..900&family=Reem+Kufi:wght@400..700&family=Tajawal:wght@200;300;400;500;700;800;900&family=Amiri:wght@400;700&family=Noto+Kufi+Arabic:wght@100..900&display=swap" rel="stylesheet">
   <style>
+    :root {
+        /* Default Logo Variables (Dark Mode) */
+        --logo-p-fill: url(#grad_white);
+        --logo-star-fill: url(#grad_gold);
+        --logo-star-filter: url(#star_glow);
+    }
+
     body {
       font-family: 'Tajawal', sans-serif;
       transition: background-color 0.3s, color 0.3s;
@@ -123,6 +130,10 @@
     body.light-mode {
       background-color: #f3f6f8 !important; /* Soft Blue-Gray White */
       color: #1f2937 !important; /* Gray 800 */
+      
+      /* Logo Overrides for Light Mode */
+      --logo-p-fill: url(#grad_navy);
+      --logo-star-fill: url(#grad_gold);
     }
     
     /* Force Navy Color for Main Headings in Light Mode */
@@ -244,6 +255,11 @@
     body.comfort-mode {
       background-color: #F0EAD6 !important; /* Eggshell / Parchment */
       color: #3E2723 !important; /* Deep Coffee Brown */
+      
+      /* Logo Overrides for Comfort Mode */
+      --logo-p-fill: #3E2723; /* Dark Coffee */
+      --logo-star-fill: #9C6F28; /* Bronze Gold */
+      --logo-star-filter: none; /* No strong glow in comfort mode */
     }
     
     /* Text Overrides - Ensure high contrast against beige */

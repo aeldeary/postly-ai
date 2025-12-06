@@ -6,61 +6,37 @@ const iconProps = {
   strokeWidth: 1.5,
 };
 
-// ... (Keep all existing icons: HomeIcon, CreatePostIcon, WebsiteIcon, ImageIcon, StyleIcon, ArchiveIcon, InfoIcon, Loader, MagicWandIcon, EyeIcon, BoltIcon, SparklesIcon, BlenderIcon, TrashIcon, PaintBrushIcon, LightBulbIcon, AlignRightIcon, AlignCenterIcon, AlignLeftIcon, AlignJustifyIcon, ChatBubbleIcon, VideoCameraIcon, SpeakerWaveIcon, DocumentTextIcon, TemplateIcon, CogIcon, AdjustmentsHorizontalIcon, CursorArrowRaysIcon, FingerPrintIcon, ArrowsRightLeftIcon, PhotoIcon, SwatchIcon, SunIcon, MoonIcon, CoffeeIcon, ComputerDesktopIcon) ...
-
 export const PostlyLogo: React.FC<{className?: string}> = ({className}) => (
-  <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
+  <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
     <defs>
-      {/* Navy Gradient for the Fingerprint P */}
-      <linearGradient id="postly_navy" x1="50" y1="30" x2="50" y2="180" gradientUnits="userSpaceOnUse">
-        <stop offset="0" stopColor="#2e4f8a" />
-        <stop offset="1" stopColor="#1a2e55" />
+      <linearGradient id="grad_navy" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#0a1e3c" />
+        <stop offset="100%" stopColor="#1e3a8a" />
       </linearGradient>
-      
-      {/* Gold Gradient for the Spark */}
-      <linearGradient id="postly_gold" x1="120" y1="20" x2="180" y2="80" gradientUnits="userSpaceOnUse">
-        <stop offset="0" stopColor="#d69545" />
-        <stop offset="1" stopColor="#bf8339" />
+      <linearGradient id="grad_white" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#ffffff" />
+        <stop offset="100%" stopColor="#e5e7eb" />
       </linearGradient>
-      
-      <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-         <feGaussianBlur stdDeviation="2" result="blur"/>
-         <feComposite in="SourceGraphic" in2="blur" operator="over"/>
-      </filter>
-      
-      <filter id="dropShadow" x="-20%" y="-20%" width="140%" height="140%">
-        <feGaussianBlur in="SourceAlpha" stdDeviation="2"/>
-        <feOffset dx="1" dy="2" result="offsetblur"/>
-        <feComponentTransfer>
-          <feFuncA type="linear" slope="0.3"/>
-        </feComponentTransfer>
-        <feMerge> 
-          <feMergeNode/>
-          <feMergeNode in="SourceGraphic"/> 
+      <linearGradient id="grad_gold" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#FCD34D" />
+        <stop offset="100%" stopColor="#bf8339" />
+      </linearGradient>
+      <filter id="star_glow" x="-50%" y="-50%" width="200%" height="200%">
+        <feGaussianBlur stdDeviation="2.5" result="coloredBlur"/>
+        <feMerge>
+          <feMergeNode in="coloredBlur"/>
+          <feMergeNode in="SourceGraphic"/>
         </feMerge>
       </filter>
     </defs>
-    
-    <g filter="url(#dropShadow)">
-        {/* The Fingerprint P - Constructed of Concentric Strokes */}
-        {/* Stroke styling to look like ridges */}
-        <g stroke="url(#postly_navy)" strokeWidth="14" strokeLinecap="round" fill="none">
-            {/* 1. Outer Ridge: Forms the main backbone and outer curve */}
-            {/* Starts bottom left, goes up, curves right, curves down, curves in */}
-            <path d="M 55 170 V 60 A 45 45 0 0 1 145 60 A 45 45 0 0 1 100 105 H 55" />
-            
-            {/* 2. Inner Ridge: Forms the inner loop and middle stem */}
-            <path d="M 82 170 V 60 A 18 18 0 0 1 118 60 A 18 18 0 0 1 100 78 H 82" />
-        </g>
-
-        {/* The Spark: Larger and Gold */}
-        {/* Placed at top right to balance the design */}
-        <path 
-          d="M 165 15 L 175 45 L 205 55 L 175 65 L 165 95 L 155 65 L 125 55 L 155 45 Z" 
-          fill="url(#postly_gold)" 
-          filter="url(#glow)"
-        />
-    </g>
+    <path 
+      d="M30 15 H55 C75 15, 85 30, 85 45 C85 60, 75 75, 55 75 H45 V90 H30 V15 Z M45 30 V60 H55 C65 60, 70 55, 70 45 C70 35, 65 30, 55 30 H45 Z" 
+      style={{ fill: 'var(--logo-p-fill)' }}
+    />
+    <path 
+      d="M82 10 L86 20 L96 22 L88 30 L90 40 L82 34 L74 40 L76 30 L68 22 L78 20 Z" 
+      style={{ fill: 'var(--logo-star-fill)', filter: 'var(--logo-star-filter)' }}
+    />
   </svg>
 );
 
@@ -79,6 +55,12 @@ export const ShoppingBagIcon: React.FC<{className?: string}> = ({className}) => 
 export const ChartBarIcon: React.FC<{className?: string}> = ({className}) => (
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className || iconProps.className}>
     <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+  </svg>
+);
+
+export const WorkflowIcon: React.FC<{className?: string}> = ({className}) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className || iconProps.className}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 14.25v2.25m3-4.5v4.5m3-6.75v6.75m3-9v9M6 20.25h12A2.25 2.25 0 0020.25 18V6A2.25 2.25 0 0018 3.75H6A2.25 2.25 0 003.75 6v12A2.25 2.25 0 006 20.25z" />
   </svg>
 );
 
@@ -293,5 +275,23 @@ export const CoffeeIcon: React.FC<{className?: string}> = ({className}) => (
 export const ComputerDesktopIcon: React.FC<{className?: string}> = ({className}) => (
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className || iconProps.className}>
     <path strokeLinecap="round" strokeLinejoin="round" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25m18 0A2.25 2.25 0 0018.75 3H5.25A2.25 2.25 0 003 5.25m18 0V12a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 12V5.25" />
+  </svg>
+);
+
+export const AdjustmentsIcon: React.FC<{className?: string}> = ({className}) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className || iconProps.className}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6a1.5 1.5 0 113 0m-3 0a1.5 1.5 0 103 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" />
+  </svg>
+);
+
+export const ScaleIcon: React.FC<{className?: string}> = ({className}) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className || iconProps.className}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
+  </svg>
+);
+
+export const RefreshIcon: React.FC<{className?: string}> = ({className}) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className || iconProps.className}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
   </svg>
 );

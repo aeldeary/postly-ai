@@ -28,7 +28,8 @@ const SceneAssistView: React.FC = () => {
   const analyze = async (base64: string, mime: string) => {
       setIsLoading(true);
       try {
-          const res = await geminiService.analyzeScene(base64, mime);
+          // Pass current language to service
+          const res = await geminiService.analyzeScene(base64, mime, isAr ? 'Arabic' : 'English');
           setAnalysis(res);
       } finally {
           setIsLoading(false);

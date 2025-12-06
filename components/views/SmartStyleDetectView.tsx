@@ -18,7 +18,8 @@ const SmartStyleDetectView: React.FC = () => {
       reader.onloadend = async () => {
           const b64 = (reader.result as string).split(',')[1];
           setLoading(true);
-          const res = await geminiService.detectStyle(b64, file.type);
+          // Pass the current language to get localized results
+          const res = await geminiService.detectStyle(b64, file.type, isAr ? 'Arabic' : 'English');
           setResult(res);
           setLoading(false);
       };
