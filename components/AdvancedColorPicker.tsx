@@ -28,6 +28,16 @@ export const AdvancedColorPicker: React.FC<AdvancedColorPickerProps> = ({ onColo
   const [mode, setMode] = useState<HarmonyMode>('manual');
   const [isOpen, setIsOpen] = useState(false);
 
+  // Sync state with props when defaultColors change (e.g. from template)
+  useEffect(() => {
+      if (defaultColors && defaultColors.length > 0) {
+          setPalette(defaultColors);
+          setBaseColor(defaultColors[0]);
+          // Reset mode to manual to avoid overriding the template colors immediately
+          setMode('manual'); 
+      }
+  }, [defaultColors]);
+
   // Helper: Hex to HSL
   const hexToHSL = (hex: string) => {
     let r = 0, g = 0, b = 0;

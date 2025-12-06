@@ -6,7 +6,7 @@ import {
   CreatePostIcon, WebsiteIcon, ImageIcon, StyleIcon, ArchiveIcon, 
   LightBulbIcon, DocumentTextIcon, MagicWandIcon, PaintBrushIcon, 
   TemplateIcon, ChartBarIcon, VideoCameraIcon, SpeakerWaveIcon, 
-  ChatBubbleIcon 
+  ShoppingBagIcon, CogIcon, InfoIcon, PostlyLogo
 } from '../Icons';
 
 interface HomeViewProps {
@@ -60,6 +60,46 @@ const HomeView: React.FC<HomeViewProps> = ({ setActiveTab }) => {
       descEn: 'AI image generation, smart editing, and image blending.'
     },
     {
+      tab: Tab.ProfessionalProduct,
+      icon: <ShoppingBagIcon className="w-8 h-8" />,
+      titleAr: 'منتج احترافي',
+      titleEn: 'Professional Product',
+      descAr: 'تحويل صور المنتجات العادية إلى صور إعلانية سينمائية مبهرة.',
+      descEn: 'Transform product photos into stunning cinematic commercial shots.'
+    },
+    {
+      tab: Tab.BrandKit,
+      icon: <MagicWandIcon className="w-8 h-8" />,
+      titleAr: 'هوية البراند',
+      titleEn: 'Brand Kit',
+      descAr: 'بناء هوية كاملة: شعارات، ألوان، ونبرة صوت للعلامة التجارية.',
+      descEn: 'Build a full identity: logos, colors, and brand voice.'
+    },
+    {
+      tab: Tab.GraphicDesigner,
+      icon: <PaintBrushIcon className="w-8 h-8" />,
+      titleAr: 'مصمم الجرافيك',
+      titleEn: 'Graphic Designer',
+      descAr: 'تصميم بوسترات إعلانية وموك أب (Mockups) للمنتجات.',
+      descEn: 'Design advertising posters and product mockups.'
+    },
+    {
+      tab: Tab.Templates,
+      icon: <TemplateIcon className="w-8 h-8" />,
+      titleAr: 'مكتبة القوالب',
+      titleEn: 'Templates',
+      descAr: 'قوالب جاهزة لجميع المجالات مع إمكانية إعادة الصياغة.',
+      descEn: 'Ready-to-use templates for all industries with remixing capabilities.'
+    },
+    {
+      tab: Tab.InfographicDesigner,
+      icon: <ChartBarIcon className="w-8 h-8" />,
+      titleAr: 'صانع الانفوجرافيك',
+      titleEn: 'Infographic Maker',
+      descAr: 'تحويل البيانات المعقدة إلى تصاميم بصرية سهلة الفهم.',
+      descEn: 'Turn complex data into easy-to-understand visual designs.'
+    },
+    {
       tab: Tab.CreateVideo,
       icon: <VideoCameraIcon className="w-8 h-8" />,
       titleAr: 'صانع الفيديو (Veo)',
@@ -74,38 +114,6 @@ const HomeView: React.FC<HomeViewProps> = ({ setActiveTab }) => {
       titleEn: 'Audio Studio',
       descAr: 'تحويل النص إلى كلام (TTS) بنبرات ولهجات عربية واقعية.',
       descEn: 'Text-to-Speech (TTS) with realistic Arabic tones and dialects.'
-    },
-    {
-      tab: Tab.GraphicDesigner,
-      icon: <PaintBrushIcon className="w-8 h-8" />,
-      titleAr: 'مصمم الجرافيك',
-      titleEn: 'Graphic Designer',
-      descAr: 'تصميم بوسترات إعلانية وموك أب (Mockups) للمنتجات.',
-      descEn: 'Design advertising posters and product mockups.'
-    },
-    {
-      tab: Tab.InfographicDesigner,
-      icon: <ChartBarIcon className="w-8 h-8" />,
-      titleAr: 'صانع الانفوجرافيك',
-      titleEn: 'Infographic Maker',
-      descAr: 'تحويل البيانات المعقدة إلى تصاميم بصرية سهلة الفهم.',
-      descEn: 'Turn complex data into easy-to-understand visual designs.'
-    },
-    {
-      tab: Tab.BrandKit,
-      icon: <MagicWandIcon className="w-8 h-8" />,
-      titleAr: 'هوية البراند',
-      titleEn: 'Brand Kit',
-      descAr: 'بناء هوية كاملة: شعارات، ألوان، ونبرة صوت للعلامة التجارية.',
-      descEn: 'Build a full identity: logos, colors, and brand voice.'
-    },
-    {
-      tab: Tab.Templates,
-      icon: <TemplateIcon className="w-8 h-8" />,
-      titleAr: 'مكتبة القوالب',
-      titleEn: 'Templates',
-      descAr: 'قوالب جاهزة لجميع المجالات مع إمكانية إعادة الصياغة.',
-      descEn: 'Ready-to-use templates for all industries with remixing capabilities.'
     },
     {
       tab: Tab.StyleTraining,
@@ -123,6 +131,22 @@ const HomeView: React.FC<HomeViewProps> = ({ setActiveTab }) => {
       descAr: 'حفظ واسترجاع وتصدير جميع أعمالك السابقة بسهولة.',
       descEn: 'Save, retrieve, and export all your past work easily.'
     },
+    {
+      tab: Tab.Settings,
+      icon: <CogIcon className="w-8 h-8" />,
+      titleAr: 'الإعدادات',
+      titleEn: 'Settings',
+      descAr: 'تخصيص التطبيق، اللغة، ونمط الواجهة.',
+      descEn: 'Customize app settings, language, and theme.'
+    },
+    {
+      tab: Tab.About,
+      icon: <InfoIcon className="w-8 h-8" />,
+      titleAr: 'عن التطبيق',
+      titleEn: 'About',
+      descAr: 'معلومات عن Postly-AI والمميزات.',
+      descEn: 'Information about Postly-AI and features.'
+    }
   ];
 
   return (
@@ -131,7 +155,11 @@ const HomeView: React.FC<HomeViewProps> = ({ setActiveTab }) => {
       <div className="text-center space-y-6 py-10 relative overflow-hidden rounded-3xl bg-gradient-to-b from-[#bf8339]/10 to-transparent border border-white/5">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-96 bg-[#bf8339]/20 rounded-full blur-[100px] -z-10"></div>
         
-        <h2 className="text-5xl md:text-6xl font-bold text-[#bf8339] mb-4 drop-shadow-sm">Postly-AI</h2>
+        <div className="flex justify-center mb-4">
+            <PostlyLogo className="w-24 h-24 drop-shadow-2xl" />
+        </div>
+        
+        <h2 className={`text-5xl md:text-6xl font-bold mb-4 drop-shadow-sm ${isLight ? 'text-[#0a1e3c]' : 'text-white'}`}>Postly-AI</h2>
         <p className={`text-xl md:text-2xl max-w-3xl mx-auto leading-relaxed font-light ${isLight ? 'text-[#0a1e3c]' : 'text-white/90'}`}>
           {isAr ? 'منصتك الإبداعية المتكاملة' : 'The All-in-One AI Powered Creative Platform'}
           <br />

@@ -12,7 +12,7 @@ import CopyButton from '../CopyButton';
 import ExportMenu from '../ExportMenu';
 
 const WebsiteContentView: React.FC = () => {
-  const { topic, tone, language, industry, updateProjectState, appLanguage } = useContext(ProjectContext);
+  const { topic, tone, language, industry, updateProjectState, appLanguage, activeDraft } = useContext(ProjectContext);
   const isAr = appLanguage === 'ar';
 
   const [localTopic, setLocalTopic] = useState(topic);
@@ -20,14 +20,14 @@ const WebsiteContentView: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Check for restored draft
+  // Check for restored draft from Context
   useEffect(() => {
-      const draft = getItem<ArchivedItem>('editDraft');
-      if (draft && draft.type === 'Website') {
-          setGenerations(draft.content);
-          removeItem('editDraft');
+      if (activeDraft && activeDraft.type === 'Website') {
+          setGenerations(activeDraft.content);
+          // Clean up context
+          updateProjectState({ activeDraft: null });
       }
-  }, []);
+  }, [activeDraft]);
 
   // Memoized localized options
   const localizedIndustries = useMemo(() => INDUSTRIES_GROUPED.map(g => ({
@@ -240,7 +240,7 @@ const WebsiteContentView: React.FC = () => {
               </div>
               
               <div className="pt-4 border-t border-white/10 mt-auto">
-                <CopyButton text={copyAll(gen)} label={isAr ? "نسخ المحتوى كاملاً (بدون أكواد HTML)" : "Copy Full Content (Plain Text No HTML)"} className="!w-full !justify-center !py-3 !text-sm !bg-[#bf8339]/10 !text-[#bf8339] hover:!bg-[#bf8339] hover:!text-[#0a1e3c] !font-bold" />
+                <CopyButton text={copyAll(gen)} label={isAr ? "نسخ المحتوى كاملاً" : "Copy Full Content"} className="!w-full !justify-center !py-3 !text-sm !bg-[#bf8339]/10 !text-[#bf8339] hover:!bg-[#bf8339] hover:!text-[#0a1e3c] !font-bold" />
               </div>
             </div>
           ))}

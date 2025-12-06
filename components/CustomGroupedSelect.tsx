@@ -18,8 +18,8 @@ interface CustomGroupedSelectProps {
 const CustomGroupedSelect: React.FC<CustomGroupedSelectProps> = ({ label, value, onChange, groups, placeholder }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0, width: 0 });
-  const [expandedIndex, setExpandedIndex] = useState<number | null>(0); // Default open first group
+  const [menuStyle, setMenuStyle] = useState<React.CSSProperties>({});
+  const [expandedIndex, setExpandedIndex] = useState<number | null>(null); // Default to null (collapsed)
   
   const containerRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -58,16 +58,43 @@ const CustomGroupedSelect: React.FC<CustomGroupedSelectProps> = ({ label, value,
     };
   }, [isOpen]);
 
-  // Update position when opening
+  // Fix: Reset expanded index when search query changes to prevent index misalignment
+  useEffect(() => {
+      setExpandedIndex(null);
+  }, [searchQuery]);
+
+  // Smart Positioning Logic
   useEffect(() => {
       if (isOpen && buttonRef.current) {
           const rect = buttonRef.current.getBoundingClientRect();
-          setMenuPosition({
-              top: rect.bottom + 5,
+          const viewportHeight = window.innerHeight;
+          const spaceBelow = viewportHeight - rect.bottom;
+          const spaceAbove = rect.top;
+          const MENU_MAX_HEIGHT = 320; // Matches approx max-h-80
+
+          const style: React.CSSProperties = {
+              position: 'fixed',
               left: rect.left,
-              width: rect.width
-          });
+              width: rect.width,
+              zIndex: 99999, // Ensure it's on top of everything
+          };
+
+          // If space below is tight (< 320px) AND there is more space above, flip upwards
+          if (spaceBelow < MENU_MAX_HEIGHT && spaceAbove > spaceBelow) {
+              // Position Above: bottom is distance from viewport bottom to top of button
+              style.bottom = viewportHeight - rect.top + 5; 
+              style.maxHeight = Math.min(MENU_MAX_HEIGHT, spaceAbove - 20); // Safety margin
+              style.transformOrigin = 'bottom center';
+          } else {
+              // Position Below
+              style.top = rect.bottom + 5;
+              style.maxHeight = Math.min(MENU_MAX_HEIGHT, spaceBelow - 20); // Safety margin
+              style.transformOrigin = 'top center';
+          }
+
+          setMenuStyle(style);
           setSearchQuery('');
+          setExpandedIndex(null); // Ensure sections are collapsed when opened
       }
   }, [isOpen]);
 
@@ -123,12 +150,8 @@ const CustomGroupedSelect: React.FC<CustomGroupedSelectProps> = ({ label, value,
   const dropdownMenu = (
       <div 
         ref={menuRef}
-        className="fixed z-[9999] bg-[#0a1e3c] border border-white/20 rounded-lg shadow-2xl max-h-80 overflow-y-auto animate-fade-in custom-scrollbar flex flex-col p-2"
-        style={{ 
-            top: menuPosition.top, 
-            left: menuPosition.left, 
-            width: menuPosition.width 
-        }}
+        className="fixed bg-[#0a1e3c] border border-white/20 rounded-lg shadow-2xl overflow-y-auto animate-fade-in custom-scrollbar flex flex-col p-2"
+        style={menuStyle}
       >
           {/* SEARCH INPUT */}
           <div className="sticky top-0 bg-[#0a1e3c] pb-2 z-10 pt-1 px-1">

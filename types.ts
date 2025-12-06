@@ -6,6 +6,7 @@ export enum Tab {
   CreatePost = 'Create Post',
   WebsiteContent = 'Website Content',
   AIImages = 'Image Studio',
+  ProfessionalProduct = 'Professional Product',
   CreateVideo = 'Create Video',
   CreateAudio = 'Create Audio',
   BrandKit = 'Brand Kit',
@@ -31,6 +32,7 @@ export interface ProjectContextState {
   previousGenerations: string[];
   appLanguage: AppLanguage;
   theme: Theme;
+  activeDraft?: ArchivedItem | null;
 }
 
 export interface PostGeneration {
@@ -123,7 +125,7 @@ export interface CreativeIdea {
 
 export interface ArchivedItem {
   id: string;
-  type: 'Post' | 'Website' | 'Image' | 'Idea' | 'Reel' | 'Ad' | 'BrandKit' | 'EditedImage' | 'CreativeIdea' | 'Video' | 'Summary' | 'Audio' | 'GraphicDesign' | 'Infographic';
+  type: 'Post' | 'Website' | 'Image' | 'Idea' | 'Reel' | 'Ad' | 'BrandKit' | 'EditedImage' | 'CreativeIdea' | 'Video' | 'Summary' | 'Audio' | 'GraphicDesign' | 'Infographic' | 'ProductPhoto';
   content: any;
   timestamp: string;
 }

@@ -8,9 +8,71 @@ const iconProps = {
 
 // ... (Keep all existing icons: HomeIcon, CreatePostIcon, WebsiteIcon, ImageIcon, StyleIcon, ArchiveIcon, InfoIcon, Loader, MagicWandIcon, EyeIcon, BoltIcon, SparklesIcon, BlenderIcon, TrashIcon, PaintBrushIcon, LightBulbIcon, AlignRightIcon, AlignCenterIcon, AlignLeftIcon, AlignJustifyIcon, ChatBubbleIcon, VideoCameraIcon, SpeakerWaveIcon, DocumentTextIcon, TemplateIcon, CogIcon, AdjustmentsHorizontalIcon, CursorArrowRaysIcon, FingerPrintIcon, ArrowsRightLeftIcon, PhotoIcon, SwatchIcon, SunIcon, MoonIcon, CoffeeIcon, ComputerDesktopIcon) ...
 
+export const PostlyLogo: React.FC<{className?: string}> = ({className}) => (
+  <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
+    <defs>
+      {/* Navy Gradient for the Fingerprint P */}
+      <linearGradient id="postly_navy" x1="50" y1="30" x2="50" y2="180" gradientUnits="userSpaceOnUse">
+        <stop offset="0" stopColor="#2e4f8a" />
+        <stop offset="1" stopColor="#1a2e55" />
+      </linearGradient>
+      
+      {/* Gold Gradient for the Spark */}
+      <linearGradient id="postly_gold" x1="120" y1="20" x2="180" y2="80" gradientUnits="userSpaceOnUse">
+        <stop offset="0" stopColor="#d69545" />
+        <stop offset="1" stopColor="#bf8339" />
+      </linearGradient>
+      
+      <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+         <feGaussianBlur stdDeviation="2" result="blur"/>
+         <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+      </filter>
+      
+      <filter id="dropShadow" x="-20%" y="-20%" width="140%" height="140%">
+        <feGaussianBlur in="SourceAlpha" stdDeviation="2"/>
+        <feOffset dx="1" dy="2" result="offsetblur"/>
+        <feComponentTransfer>
+          <feFuncA type="linear" slope="0.3"/>
+        </feComponentTransfer>
+        <feMerge> 
+          <feMergeNode/>
+          <feMergeNode in="SourceGraphic"/> 
+        </feMerge>
+      </filter>
+    </defs>
+    
+    <g filter="url(#dropShadow)">
+        {/* The Fingerprint P - Constructed of Concentric Strokes */}
+        {/* Stroke styling to look like ridges */}
+        <g stroke="url(#postly_navy)" strokeWidth="14" strokeLinecap="round" fill="none">
+            {/* 1. Outer Ridge: Forms the main backbone and outer curve */}
+            {/* Starts bottom left, goes up, curves right, curves down, curves in */}
+            <path d="M 55 170 V 60 A 45 45 0 0 1 145 60 A 45 45 0 0 1 100 105 H 55" />
+            
+            {/* 2. Inner Ridge: Forms the inner loop and middle stem */}
+            <path d="M 82 170 V 60 A 18 18 0 0 1 118 60 A 18 18 0 0 1 100 78 H 82" />
+        </g>
+
+        {/* The Spark: Larger and Gold */}
+        {/* Placed at top right to balance the design */}
+        <path 
+          d="M 165 15 L 175 45 L 205 55 L 175 65 L 165 95 L 155 65 L 125 55 L 155 45 Z" 
+          fill="url(#postly_gold)" 
+          filter="url(#glow)"
+        />
+    </g>
+  </svg>
+);
+
 export const HomeIcon: React.FC<{className?: string}> = ({className}) => (
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" {...iconProps} className={className || iconProps.className}>
     <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955a1.5 1.5 0 012.122 0l8.954 8.955M3 13.5V21.75a1.5 1.5 0 001.5 1.5h3.75a1.5 1.5 0 001.5-1.5V16.5a1.5 1.5 0 011.5-1.5h1.5a1.5 1.5 0 011.5 1.5v5.25a1.5 1.5 0 001.5 1.5h3.75a1.5 1.5 0 001.5-1.5V13.5" />
+  </svg>
+);
+
+export const ShoppingBagIcon: React.FC<{className?: string}> = ({className}) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className || iconProps.className}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
   </svg>
 );
 
@@ -174,30 +236,6 @@ export const CogIcon: React.FC<{className?: string}> = ({className}) => (
   </svg>
 );
 
-export const SunIcon: React.FC<{className?: string}> = ({className}) => (
-  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className || iconProps.className}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
-  </svg>
-);
-
-export const MoonIcon: React.FC<{className?: string}> = ({className}) => (
-  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className || iconProps.className}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
-  </svg>
-);
-
-export const CoffeeIcon: React.FC<{className?: string}> = ({className}) => (
-  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className || iconProps.className}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 9V5.25m3 3.75V5.25m3 3.75V5.25M6 10.5h12a3 3 0 013 3v.75a2.25 2.25 0 01-2.25 2.25H18A3 3 0 0115 19.5H9a3 3 0 01-3-3H5.25A2.25 2.25 0 013 14.25v-.75a3 3 0 013-3z" />
-  </svg>
-);
-
-export const ComputerDesktopIcon: React.FC<{className?: string}> = ({className}) => (
-  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className || iconProps.className}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25m18 0A2.25 2.25 0 0018.75 3H5.25A2.25 2.25 0 003 5.25m18 0V12a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 12V5.25" />
-  </svg>
-);
-
 export const AdjustmentsHorizontalIcon: React.FC<{className?: string}> = ({className}) => (
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className || iconProps.className}>
     <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" />
@@ -231,5 +269,29 @@ export const PhotoIcon: React.FC<{className?: string}> = ({className}) => (
 export const SwatchIcon: React.FC<{className?: string}> = ({className}) => (
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className || iconProps.className}>
     <path strokeLinecap="round" strokeLinejoin="round" d="M4.098 19.902a3.75 3.75 0 005.304 0l6.401-6.402M6.75 21A3.75 3.75 0 013 17.25V4.125C3 3.504 3.504 3 4.125 3h5.25c.621 0 1.125.504 1.125 1.125v4.072M6.75 21a3.75 3.75 0 003.75-3.75V8.197M6.75 21h13.125c.621 0 1.125-.504 1.125-1.125v-5.25c0-.621-.504-1.125-1.125-1.125h-4.072M10.5 8.197l2.88-2.88c.433-.433 1.137-.433 1.57 0l2.754 2.754c.433.433.433 1.137 0 1.57l-2.88 2.88M8.583 16.299c-.328.165-.693.299-1.083.299C6.673 16.598 6 15.925 6 15.097c0-.828.673-1.501 1.5-1.501.39 0 .755.134 1.083.299" />
+  </svg>
+);
+
+export const SunIcon: React.FC<{className?: string}> = ({className}) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className || iconProps.className}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" />
+  </svg>
+);
+
+export const MoonIcon: React.FC<{className?: string}> = ({className}) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className || iconProps.className}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
+  </svg>
+);
+
+export const CoffeeIcon: React.FC<{className?: string}> = ({className}) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className || iconProps.className}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 9V5.25m3 3.75V5.25m3 3.75V5.25M6 10.5h12a3 3 0 013 3v.75a2.25 2.25 0 01-2.25 2.25H18A3 3 0 0115 19.5H9a3 3 0 01-3-3H5.25A2.25 2.25 0 013 14.25v-.75a3 3 0 013-3z" />
+  </svg>
+);
+
+export const ComputerDesktopIcon: React.FC<{className?: string}> = ({className}) => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className || iconProps.className}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25m18 0A2.25 2.25 0 0018.75 3H5.25A2.25 2.25 0 003 5.25m18 0V12a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 12V5.25" />
   </svg>
 );

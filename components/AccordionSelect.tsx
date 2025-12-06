@@ -16,7 +16,7 @@ interface AccordionSelectProps {
 
 const AccordionSelect: React.FC<AccordionSelectProps> = ({ label, value, onChange, groups, placeholder }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [expandedIndex, setExpandedIndex] = useState<number | null>(0); // Default open first group
+  const [expandedIndex, setExpandedIndex] = useState<number | null>(null); // Default to null (collapsed)
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -65,7 +65,11 @@ const AccordionSelect: React.FC<AccordionSelectProps> = ({ label, value, onChang
       {/* Trigger Button */}
       <button
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => {
+            const nextState = !isOpen;
+            setIsOpen(nextState);
+            if (nextState) setExpandedIndex(null); // Reset to collapsed when opening
+        }}
         className="w-full bg-white/5 border border-white/20 rounded-lg p-2.5 text-sm text-right flex justify-between items-center focus:outline-none focus:border-[#bf8339] hover:bg-white/10 transition-colors group"
       >
         <span className="truncate font-medium text-white/90">{getDisplayValue()}</span>

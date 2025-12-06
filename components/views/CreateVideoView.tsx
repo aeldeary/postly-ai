@@ -4,7 +4,7 @@ import { ProjectContext } from '../../contexts/ProjectContext';
 import Button from '../Button';
 import { VideoCameraIcon, Loader, ImageIcon, MagicWandIcon } from '../Icons';
 import * as geminiService from '../../services/geminiService';
-import { setItem, getItem, removeItem } from '../../utils/localStorage';
+import { setItem, getItem } from '../../utils/localStorage';
 import { ARCHIVE_STORAGE_KEY, VIDEO_ASPECT_RATIOS, VIDEO_RESOLUTIONS, INDUSTRIES_GROUPED, LANGUAGES_GROUPED } from '../../constants';
 import AccordionSelect from '../AccordionSelect';
 import CustomGroupedSelect from '../CustomGroupedSelect';
@@ -14,7 +14,7 @@ import { ArchivedItem } from '../../types';
 type VideoMode = 'TextToVideo' | 'ImageToVideo';
 
 const CreateVideoView: React.FC = () => {
-  const { topic, industry, language, appLanguage } = useContext(ProjectContext);
+  const { topic, industry, language, appLanguage, activeDraft, updateProjectState } = useContext(ProjectContext);
   const isAr = appLanguage === 'ar';
   
   const [mode, setMode] = useState<VideoMode>('TextToVideo');
@@ -41,16 +41,25 @@ const CreateVideoView: React.FC = () => {
   const [isEnhancing, setIsEnhancing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Check for restored draft
+  // Check for restored draft from Context
   useEffect(() => {
-      const draft = getItem<ArchivedItem>('editDraft');
-      if (draft && draft.type === 'Video') {
-          setGeneratedVideo(draft.content.url);
-          setPrompt(draft.content.prompt);
-          if (draft.content.mode) setMode(draft.content.mode);
-          removeItem('editDraft');
+      if (activeDraft && activeDraft.type === 'Video') {
+          setGeneratedVideo(activeDraft.content.url);
+          setPrompt(activeDraft.content.prompt);
+          if (activeDraft.content.mode) setMode(activeDraft.content.mode);
+          // Clean up context
+          updateProjectState({ activeDraft: null });
       }
-  }, []);
+  }, [activeDraft]);
+
+  // Cleanup Blob URL
+  useEffect(() => {
+      return () => {
+          if (generatedVideo) {
+              URL.revokeObjectURL(generatedVideo);
+          }
+      };
+  }, [generatedVideo]);
 
   const ASPECT_RATIO_GROUPS = useMemo(() => [{
       label: isAr ? 'الأبعاد' : 'Aspect Ratios',
@@ -101,6 +110,9 @@ const CreateVideoView: React.FC = () => {
 
   const handleGenerate = async () => {
       setError(null);
+      
+      // Cleanup previous video if exists
+      if (generatedVideo) URL.revokeObjectURL(generatedVideo);
       setGeneratedVideo(null);
       
       // Check API Key Selection

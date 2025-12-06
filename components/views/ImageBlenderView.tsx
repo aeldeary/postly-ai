@@ -7,6 +7,7 @@ import Button from '../Button';
 import { Loader, MagicWandIcon } from '../Icons';
 import AccordionSelect from '../AccordionSelect';
 import CustomGroupedSelect from '../CustomGroupedSelect';
+import ImageCropperModal from '../ImageCropperModal';
 
 interface BlenderImage {
     id: string;
@@ -29,6 +30,10 @@ const ImageBlenderView: React.FC = () => {
     const [isSuggesting, setIsSuggesting] = useState(false);
     const [aspectRatio, setAspectRatio] = useState('1:1');
     
+    // Cropper State
+    const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
+    const [pendingFileType, setPendingFileType] = useState('image/jpeg');
+
     const fileRef = useRef<HTMLInputElement>(null);
 
     // Helper to get translated role label
@@ -88,26 +93,34 @@ const ImageBlenderView: React.FC = () => {
         
         const reader = new FileReader();
         reader.onloadend = () => {
-            const base64 = (reader.result as string).split(',')[1];
-            
-            // Auto detect aspect ratio if this is the first image
-            if (images.length === 0) {
-                const img = new Image();
-                img.src = reader.result as string;
-                img.onload = () => {
-                    const r = getClosestAspectRatio(img.width, img.height);
-                    setAspectRatio(r);
-                };
-            }
-
-            setImages([...images, {
-                id: Date.now().toString(),
-                data: base64,
-                mime: file.type,
-                role: images.length === 0 ? 'Subject' : 'Not Used' // Default first to Subject
-            }]);
+            setCropImageSrc(reader.result as string);
+            setPendingFileType(file.type);
         };
         reader.readAsDataURL(file);
+        // Reset
+        e.target.value = '';
+    };
+
+    const handleCropConfirm = (croppedBase64: string) => {
+        const base64Data = croppedBase64.split(',')[1];
+        
+        // Auto detect ratio on first image
+        if (images.length === 0) {
+            const img = new Image();
+            img.src = croppedBase64;
+            img.onload = () => {
+                const r = getClosestAspectRatio(img.width, img.height);
+                setAspectRatio(r);
+            };
+        }
+
+        setImages([...images, {
+            id: Date.now().toString(),
+            data: base64Data,
+            mime: 'image/jpeg', // Canvas export is jpeg
+            role: images.length === 0 ? 'Subject' : 'Not Used'
+        }]);
+        setCropImageSrc(null);
     };
 
     const updateRole = (id: string, newRole: string) => {
@@ -245,6 +258,16 @@ const ImageBlenderView: React.FC = () => {
                     </div>
                 )}
             </div>
+
+            {/* CROPPER MODAL */}
+            {cropImageSrc && (
+                <ImageCropperModal
+                    imageSrc={cropImageSrc}
+                    onCrop={handleCropConfirm}
+                    onCancel={() => setCropImageSrc(null)}
+                    isAr={isAr}
+                />
+            )}
         </div>
     );
 };

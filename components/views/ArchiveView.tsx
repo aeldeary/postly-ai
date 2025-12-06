@@ -12,10 +12,24 @@ interface ArchiveViewProps {
 }
 
 const ArchiveCard: React.FC<{ item: ArchivedItem; onDelete: (id: string) => void; onRestore: (item: ArchivedItem) => void; isAr: boolean }> = ({ item, onDelete, onRestore, isAr }) => {
+  
+  // Helper to handle legacy data structures safely
+  const getSafeString = (val: any): string => {
+      if (typeof val === 'string') return val;
+      if (typeof val === 'object' && val !== null) {
+          // Handle specific legacy summary structure { headings, body }
+          if ('headings' in val || 'body' in val) {
+              return [val.headings, val.body].filter(Boolean).join('\n\n');
+          }
+          return JSON.stringify(val);
+      }
+      return '';
+  };
+
   const renderContent = () => {
     switch (item.type) {
       case 'Post':
-        const postText = item.content[0]?.post;
+        const postText = item.content?.[0]?.post || '';
         return (
           <div className="relative group">
             <div className="flex justify-between items-start">
@@ -30,20 +44,23 @@ const ArchiveCard: React.FC<{ item: ArchivedItem; onDelete: (id: string) => void
           <div className="relative group">
              <div className="flex justify-between items-start">
                 <p className="font-bold text-white/90">{isAr ? 'ريلز/تيك توك' : 'Reel/TikTok'}</p>
-                <CopyButton text={`Title: ${item.content.title}\n${item.content.versions?.[0]?.scenes?.map((s:any) => s.audio).join('\n')}`} label={isAr ? "نسخ" : "Copy"} />
+                <CopyButton 
+                    text={`Title: ${item.content?.title || ''}\n${item.content?.versions?.[0]?.scenes?.map((s:any) => s.audio).join('\n') || ''}`} 
+                    label={isAr ? "نسخ" : "Copy"} 
+                />
              </div>
-             <p className="text-sm text-white/70 mt-1">{item.content.versions?.[0]?.title || item.content.title}</p>
+             <p className="text-sm text-white/70 mt-1">{item.content?.versions?.[0]?.title || item.content?.title || 'Untitled'}</p>
           </div>
         );
       case 'Ad':
-        const adText = item.content[0]?.primaryText;
+        const adText = item.content?.[0]?.primaryText || '';
         return (
           <div className="relative group">
              <div className="flex justify-between items-start">
                 <p className="font-bold text-white/90">{isAr ? 'إعلان ممول' : 'Paid Ad'}</p>
                 <CopyButton text={adText} label={isAr ? "نسخ" : "Copy"} />
              </div>
-             <p className="text-sm text-white/70 mt-1">{item.content[0]?.headline}</p>
+             <p className="text-sm text-white/70 mt-1">{item.content?.[0]?.headline || ''}</p>
           </div>
         );
       case 'BrandKit':
@@ -51,19 +68,21 @@ const ArchiveCard: React.FC<{ item: ArchivedItem; onDelete: (id: string) => void
              <div className="relative group">
                  <div className="flex justify-between items-start">
                     <p className="font-bold text-white/90">{isAr ? 'هوية براند' : 'Brand Identity'}</p>
-                    <CopyButton text={`Brand: ${item.content.brandName}\nMission: ${item.content.mission}`} label={isAr ? "نسخ" : "Copy"} />
+                    <CopyButton text={`Brand: ${item.content?.brandName || ''}\nMission: ${item.content?.mission || ''}`} label={isAr ? "نسخ" : "Copy"} />
                  </div>
-                 <p className="text-sm text-white/70 mt-1">{item.content.brandName}</p>
+                 <p className="text-sm text-white/70 mt-1">{item.content?.brandName || ''}</p>
              </div>
          );
       case 'Website':
+        const webContent = item.content?.[0]?.pageContent || '';
+        const metaDesc = item.content?.[0]?.metaDescription || '';
         return (
           <div className="relative group">
             <div className="flex justify-between items-start">
                 <p className="font-bold text-white/90">{isAr ? 'محتوى موقع' : 'Web Content'}</p>
-                <CopyButton text={item.content[0]?.pageContent} label={isAr ? "نسخ" : "Copy"} />
+                <CopyButton text={webContent} label={isAr ? "نسخ" : "Copy"} />
             </div>
-            <p className="text-sm text-white/70 mt-1 line-clamp-3">{item.content[0]?.metaDescription}</p>
+            <p className="text-sm text-white/70 mt-1 line-clamp-3">{metaDesc}</p>
           </div>
         );
       case 'Image':
@@ -88,33 +107,47 @@ const ArchiveCard: React.FC<{ item: ArchivedItem; onDelete: (id: string) => void
           </div>
         );
       case 'Video':
+         const videoPrompt = getSafeString(item.content?.prompt);
          return (
           <div className="relative group">
              <div className="flex justify-between items-start">
                 <p className="font-bold text-white/90">{isAr ? 'فيديو (Veo)' : 'Video (Veo)'}</p>
-                <CopyButton text={item.content.prompt} label={isAr ? "نسخ الوصف" : "Copy Prompt"} />
+                <CopyButton text={videoPrompt} label={isAr ? "نسخ الوصف" : "Copy Prompt"} />
              </div>
-             <p className="text-sm text-white/70 mt-1 line-clamp-2">{item.content.prompt}</p>
+             <p className="text-sm text-white/70 mt-1 line-clamp-2">{videoPrompt}</p>
           </div>
          );
       case 'Idea':
+         const ideaTitle = item.content?.[0]?.title || '';
          return (
              <div className="relative group">
                  <div className="flex justify-between items-start">
                     <p className="font-bold text-white/90">{isAr ? 'فكرة إبداعية' : 'Creative Idea'}</p>
-                    <CopyButton text={item.content[0]?.title} label={isAr ? "نسخ" : "Copy"} />
+                    <CopyButton text={ideaTitle} label={isAr ? "نسخ" : "Copy"} />
                  </div>
-                 <p className="text-sm text-white/70 mt-1">{item.content[0]?.title}</p>
+                 <p className="text-sm text-white/70 mt-1">{ideaTitle}</p>
              </div>
          );
       case 'Summary':
+         const summaryText = getSafeString(item.content);
          return (
              <div className="relative group">
                  <div className="flex justify-between items-start">
                     <p className="font-bold text-white/90">{isAr ? 'ملخص محتوى' : 'Content Summary'}</p>
-                    <CopyButton text={item.content} label={isAr ? "نسخ" : "Copy"} />
+                    <CopyButton text={summaryText} label={isAr ? "نسخ" : "Copy"} />
                  </div>
-                 <p className="text-sm text-white/70 mt-1 line-clamp-2">{item.content}</p>
+                 <p className="text-sm text-white/70 mt-1 line-clamp-2">{summaryText}</p>
+             </div>
+         );
+      case 'Audio':
+         const audioText = getSafeString(item.content?.text);
+         return (
+             <div className="relative group">
+                 <div className="flex justify-between items-start">
+                    <p className="font-bold text-white/90">{isAr ? 'مقطع صوتي' : 'Audio Clip'}</p>
+                    <CopyButton text={audioText} label={isAr ? "نسخ النص" : "Copy Text"} />
+                 </div>
+                 <p className="text-sm text-white/70 mt-1 line-clamp-2">{audioText}</p>
              </div>
          );
       default:
@@ -165,7 +198,7 @@ const ArchiveCard: React.FC<{ item: ArchivedItem; onDelete: (id: string) => void
 };
 
 const ArchiveView: React.FC<ArchiveViewProps> = ({ setActiveTab }) => {
-  const { appLanguage } = useContext(ProjectContext);
+  const { appLanguage, updateProjectState } = useContext(ProjectContext);
   const isAr = appLanguage === 'ar';
   const [archive, setArchive] = useState<ArchivedItem[]>([]);
 
@@ -176,13 +209,8 @@ const ArchiveView: React.FC<ArchiveViewProps> = ({ setActiveTab }) => {
   // Corrected Delete Logic
   const handleDelete = (id: string) => {
     if (window.confirm(isAr ? "هل أنت متأكد من حذف هذا العنصر؟" : "Are you sure you want to delete this item?")) {
-        // 1. Calculate new state first
         const updatedArchive = archive.filter(item => item.id !== id);
-        
-        // 2. Update React State
         setArchive(updatedArchive);
-        
-        // 3. Update Local Storage explicitly
         setItem(ARCHIVE_STORAGE_KEY, updatedArchive);
         
         if ((window as any).toast) {
@@ -194,10 +222,7 @@ const ArchiveView: React.FC<ArchiveViewProps> = ({ setActiveTab }) => {
   // Corrected Clear All Logic
   const handleClearAll = () => {
       if (window.confirm(isAr ? "تحذير: هل أنت متأكد تماماً من رغبتك في مسح كل محتويات الأرشيف؟ لا يمكن التراجع عن هذا الإجراء." : "Warning: Are you sure you want to clear the entire archive? This action cannot be undone.")) {
-          // 1. Update Storage
           setItem(ARCHIVE_STORAGE_KEY, []);
-          
-          // 2. Update State
           setArchive([]);
           
           if ((window as any).toast) {
@@ -209,7 +234,8 @@ const ArchiveView: React.FC<ArchiveViewProps> = ({ setActiveTab }) => {
   const handleRestore = (item: ArchivedItem) => {
       if (!setActiveTab) return;
       
-      setItem('editDraft', item);
+      // Use Context instead of localStorage for passing potentially large drafts
+      updateProjectState({ activeDraft: item });
       
       switch (item.type) {
           case 'Post': 
@@ -240,6 +266,9 @@ const ArchiveView: React.FC<ArchiveViewProps> = ({ setActiveTab }) => {
               break;
           case 'Summary': 
               setActiveTab(Tab.InstantSummary); 
+              break;
+          case 'Audio':
+              setActiveTab(Tab.CreateAudio);
               break;
           default:
               setActiveTab(Tab.Home);

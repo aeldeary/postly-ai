@@ -5,14 +5,14 @@ import Button from '../Button';
 import { Loader, LightBulbIcon, MagicWandIcon, CreatePostIcon, ImageIcon, SparklesIcon } from '../Icons';
 import { INDUSTRIES_GROUPED, LANGUAGES_GROUPED, ARABIC_DIALECTS_GROUPED, IDEA_TYPES, ARCHIVE_STORAGE_KEY } from '../../constants';
 import * as geminiService from '../../services/geminiService';
-import { setItem, getItem, removeItem } from '../../utils/localStorage';
+import { setItem, getItem } from '../../utils/localStorage';
 import { CreativeIdea, ArchivedItem } from '../../types';
 import AccordionSelect from '../AccordionSelect';
 import CustomGroupedSelect from '../CustomGroupedSelect';
 import CopyButton from '../CopyButton';
 
 const IdeaGeneratorView: React.FC = () => {
-    const { topic, industry, language, dialect, updateProjectState, appLanguage } = useContext(ProjectContext);
+    const { topic, industry, language, dialect, activeDraft, updateProjectState, appLanguage } = useContext(ProjectContext);
     const isAr = appLanguage === 'ar';
     
     const [localTopic, setLocalTopic] = useState(topic);
@@ -32,14 +32,14 @@ const IdeaGeneratorView: React.FC = () => {
     const [translatedPrompts, setTranslatedPrompts] = useState<Record<string, string>>({}); // Key: ideaIndex-type
     const [isTranslating, setIsTranslating] = useState<Record<string, boolean>>({});
 
-    // Check for restored draft
+    // Check for restored draft from Context
     useEffect(() => {
-        const draft = getItem<ArchivedItem>('editDraft');
-        if (draft && draft.type === 'Idea') {
-            setIdeas(draft.content);
-            removeItem('editDraft');
+        if (activeDraft && activeDraft.type === 'Idea') {
+            setIdeas(activeDraft.content);
+            // Clean up context
+            updateProjectState({ activeDraft: null });
         }
-    }, []);
+    }, [activeDraft]);
 
     const localizedIdeaTypes = useMemo(() => IDEA_TYPES.map(g => ({
         label: isAr ? g.label.ar : g.label.en,

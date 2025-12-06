@@ -3,6 +3,9 @@ import React, { useState, useRef, useEffect, useContext } from 'react';
 import { ProjectContext } from '../contexts/ProjectContext';
 import { jsPDF } from 'jspdf';
 
+// Simple global cache for font data to avoid fetching on every export
+const fontCache: { [key: string]: string } = {}; 
+
 interface ExportMenuProps {
   content: string;
   type: 'text' | 'image';
@@ -66,46 +69,51 @@ const ExportMenu: React.FC<ExportMenuProps> = ({ content, type, filename = 'post
             });
 
             try {
-                // Using Cairo or Amiri as an "Arial" alternative for Arabic support.
-                // Standard Arial does not support Arabic in jsPDF without a custom font file.
-                // We provide multiple reliable sources.
-                const fontUrls = [
-                    // Primary: Cairo (Modern Sans-Serif)
-                    'https://raw.githubusercontent.com/google/fonts/main/ofl/cairo/Cairo-Regular.ttf',
-                    // Secondary: Amiri (Classic Naskh)
-                    'https://raw.githubusercontent.com/google/fonts/main/ofl/amiri/Amiri-Regular.ttf',
-                    // Fallbacks via JSDelivr CDN
-                    'https://cdn.jsdelivr.net/gh/google/fonts/ofl/cairo/Cairo-Regular.ttf',
-                    'https://cdn.jsdelivr.net/gh/google/fonts/ofl/amiri/Amiri-Regular.ttf'
-                ];
-                
-                let fontBuffer: ArrayBuffer | null = null;
+                let base64Font = fontCache['ArabicFont'];
 
-                // Try fetching from mirrors sequentially
-                for (const url of fontUrls) {
-                    try {
-                        const response = await fetch(url, { cache: 'force-cache' });
-                        if (response.ok) {
-                            fontBuffer = await response.arrayBuffer();
-                            break; 
+                if (!base64Font) {
+                    // Using Cairo or Amiri as an "Arial" alternative for Arabic support.
+                    const fontUrls = [
+                        // Primary: Cairo (Modern Sans-Serif)
+                        'https://raw.githubusercontent.com/google/fonts/main/ofl/cairo/Cairo-Regular.ttf',
+                        // Secondary: Amiri (Classic Naskh)
+                        'https://raw.githubusercontent.com/google/fonts/main/ofl/amiri/Amiri-Regular.ttf',
+                        // Fallbacks via JSDelivr CDN
+                        'https://cdn.jsdelivr.net/gh/google/fonts/ofl/cairo/Cairo-Regular.ttf',
+                        'https://cdn.jsdelivr.net/gh/google/fonts/ofl/amiri/Amiri-Regular.ttf'
+                    ];
+                    
+                    let fontBuffer: ArrayBuffer | null = null;
+
+                    // Try fetching from mirrors sequentially
+                    for (const url of fontUrls) {
+                        try {
+                            const response = await fetch(url, { cache: 'force-cache' });
+                            if (response.ok) {
+                                fontBuffer = await response.arrayBuffer();
+                                break; 
+                            }
+                        } catch (e) {
+                            console.warn(`Failed to fetch font from ${url}`, e);
                         }
-                    } catch (e) {
-                        console.warn(`Failed to fetch font from ${url}`, e);
                     }
-                }
 
-                if (!fontBuffer) {
-                    throw new Error("Could not load font from any source.");
+                    if (!fontBuffer) {
+                        throw new Error("Could not load font from any source.");
+                    }
+                    
+                    // Convert to Base64 string for jsPDF
+                    let binary = '';
+                    const bytes = new Uint8Array(fontBuffer);
+                    const len = bytes.byteLength;
+                    for (let i = 0; i < len; i++) {
+                        binary += String.fromCharCode(bytes[i]);
+                    }
+                    base64Font = window.btoa(binary);
+                    
+                    // Cache it
+                    fontCache['ArabicFont'] = base64Font;
                 }
-                
-                // Convert to Base64 string for jsPDF
-                let binary = '';
-                const bytes = new Uint8Array(fontBuffer);
-                const len = bytes.byteLength;
-                for (let i = 0; i < len; i++) {
-                    binary += String.fromCharCode(bytes[i]);
-                }
-                const base64Font = window.btoa(binary);
                 
                 // Add font to VFS and register it as 'Arial' to satisfy user request for Arial look-alike or override default
                 doc.addFileToVFS('CustomArabic.ttf', base64Font);

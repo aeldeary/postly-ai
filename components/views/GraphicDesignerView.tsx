@@ -10,6 +10,7 @@ import { setItem, getItem, removeItem } from '../../utils/localStorage';
 import { AdvancedColorPicker } from '../AdvancedColorPicker';
 import { ArchivedItem } from '../../types';
 import ExportMenu from '../ExportMenu';
+import ImageCropperModal from '../ImageCropperModal';
 
 type Mode = 'Poster' | 'Mockup';
 type TextPosition = 'Top' | 'Center' | 'Bottom' | 'TopRight' | 'TopLeft' | 'BottomRight' | 'BottomLeft' | 'SideRight' | 'SideLeft' | 'BelowHeadline' | 'AwayTop' | 'AwayBottom' | 'AwayRight' | 'AwayLeft';
@@ -65,7 +66,7 @@ const TextAlignSelector: React.FC<{value: TextAlign, onChange: (v: TextAlign) =>
 );
 
 const GraphicDesignerView: React.FC = () => {
-    const { appLanguage } = useContext(ProjectContext);
+    const { appLanguage, activeDraft, updateProjectState } = useContext(ProjectContext);
     const isAr = appLanguage === 'ar';
     const [mode, setMode] = useState<Mode>('Poster');
 
@@ -139,6 +140,10 @@ const GraphicDesignerView: React.FC = () => {
     const [generatedImage, setGeneratedImage] = useState<string | null>(null); 
     const [isLoading, setIsLoading] = useState(false);
     const mockupFileRef = useRef<HTMLInputElement>(null);
+
+    // CROPPER STATE
+    const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
+    const [cropTarget, setCropTarget] = useState<'reference' | 'mockup'>('reference');
 
     // --- CONSTANTS FOR CUSTOM SELECTS (Localized) ---
     const FONT_GROUPS = useMemo(() => [
@@ -242,25 +247,24 @@ const GraphicDesignerView: React.FC = () => {
             setMode('Poster');
             setPosterTopic(activeTemplate.prompt || "");
             removeItem('activeTemplate');
-        } else {
-            const draft = getItem<ArchivedItem>('editDraft');
-            if (draft && draft.type === 'GraphicDesign') {
-                setGeneratedImage(draft.content);
-                setRawGeneratedImage(draft.content);
-                removeItem('editDraft');
-            }
+        } else if (activeDraft && activeDraft.type === 'GraphicDesign') {
+            setGeneratedImage(activeDraft.content);
+            setRawGeneratedImage(activeDraft.content);
+            // Clean up context
+            updateProjectState({ activeDraft: null });
         }
-    }, []);
+    }, [activeDraft]);
 
     const handleMockupUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
         const reader = new FileReader();
         reader.onloadend = () => {
-            const base64 = (reader.result as string).split(',')[1];
-            setMockupImage(`data:${file.type};base64,${base64}`);
+            setCropImageSrc(reader.result as string);
+            setCropTarget('mockup');
         };
         reader.readAsDataURL(file);
+        e.target.value = '';
     };
 
     const handleReferenceUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -269,11 +273,21 @@ const GraphicDesignerView: React.FC = () => {
         if (!file) return;
         const reader = new FileReader();
         reader.onloadend = () => {
-            const base64 = (reader.result as string).split(',')[1];
-            setReferenceImages([...referenceImages, { id: Date.now().toString(), data: base64, mimeType: file.type }]);
-            if (referenceFileRef.current) referenceFileRef.current.value = '';
+            setCropImageSrc(reader.result as string);
+            setCropTarget('reference');
         };
         reader.readAsDataURL(file);
+        e.target.value = '';
+    };
+
+    const handleCropConfirm = (croppedBase64: string) => {
+        if (cropTarget === 'reference') {
+            const base64Data = croppedBase64.split(',')[1];
+            setReferenceImages([...referenceImages, { id: Date.now().toString(), data: base64Data, mimeType: 'image/jpeg' }]);
+        } else {
+            setMockupImage(croppedBase64);
+        }
+        setCropImageSrc(null);
     };
 
     const removeReferenceImage = (id: string) => {
@@ -304,24 +318,26 @@ const GraphicDesignerView: React.FC = () => {
     };
 
     const getApiRatio = (sizeValue: string): string => {
-        // Updated mapping for comprehensive sizes
+        // Map common graphic design presets to closest supported model ratio
         switch (sizeValue) {
+            // Square
             case '1:1': return '1:1';
+            
+            // Vertical
             case '4:5': return '3:4'; 
             case '9:16': return '9:16';
+            case 'A4_V': case 'A3_V': case 'A5_V': return '3:4';
+            case 'Rollup': case 'X_Banner': case 'Web_Skyscraper': case 'Flyer_DL': return '9:16';
+            
+            // Horizontal
             case '16:9': return '16:9';
-            case '1.91:1': return '16:9';
-            case '3:1': return '16:9'; // Approximation for Twitter Header
-            case '4:1': return '16:9'; // Approximation for LinkedIn Cover
-            case '2:3': return '3:4'; // Approximation for Pinterest
-            case 'A4_V': case 'A5_V': return '3:4';
-            case 'A4_H': case 'Poster_50x70': case 'A3_V': return '4:3';
-            case 'BizCard': return '16:9'; // Approximate 3.5:2
-            case 'Leaderboard': return '16:9'; // Extreme crop, approx
-            case 'MPU': return '1:1'; // Approx 300x250
-            case 'Skyscraper': return '9:16'; // Extreme crop
-            case '3:2': return '4:3'; 
-            case '4:3': return '4:3';
+            case 'FB_Cover': case 'Twitter_Header': return '16:9';
+            case 'Billboard': case 'Web_Leaderboard': return '16:9';
+            case 'A4_H': case 'A3_H': case 'A5_H': return '4:3';
+            case 'LinkedIn_Post': return '4:3';
+            case 'BizCard': return '16:9';
+            
+            // Default
             default: return '1:1';
         }
     };
@@ -1013,6 +1029,16 @@ const GraphicDesignerView: React.FC = () => {
               )}
           </div>
       </div>
+
+      {/* CROPPER MODAL */}
+      {cropImageSrc && (
+          <ImageCropperModal
+              imageSrc={cropImageSrc}
+              onCrop={handleCropConfirm}
+              onCancel={() => setCropImageSrc(null)}
+              isAr={isAr}
+          />
+      )}
     </div>
   );
 };

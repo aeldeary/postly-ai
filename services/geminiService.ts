@@ -7,8 +7,14 @@ import {
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
+// Improved JSON Cleaner
 const cleanJson = (text: string): string => {
-  return text.replace(/```json\s*|\s*```/g, '').trim();
+  if (!text) return '';
+  // Try to match code blocks with or without "json" tag
+  const match = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+  if (match) return match[1].trim();
+  // Fallback: Remove all code block markers and trim
+  return text.replace(/```(?:json)?/g, '').replace(/```/g, '').trim();
 };
 
 const SAFETY_MESSAGE = "عذراً، لم يتم تنفيذ طلبك لأنه يحتوي على محتوى مخالف للآداب العامة وسياسات الاستخدام";
@@ -31,6 +37,9 @@ const safeErrorHandler = (error: any): string => {
     }
     if (msg.includes("text only") || msg.includes("text instead")) {
          return "⚠️ Generation failed: The model returned text instead of an image. Please try again.";
+    }
+    if (msg.includes("JSON")) {
+        return "⚠️ Failed to parse AI response. Please try again.";
     }
     
     return msg || "An unknown error occurred.";
@@ -62,8 +71,6 @@ const retry = async <T>(fn: () => Promise<T>, retries = 3, delay = 2000): Promis
 const generateContent = (params: GenerateContentParameters): Promise<GenerateContentResponse> => retry(() => ai.models.generateContent(params));
 const generateVideosWrapper = (params: any) => retry(() => ai.models.generateVideos(params));
 
-// --- Text Generation Functions ---
-
 export const generatePost = async (topic: string, dialect: string, language: string, industry: string, tone: string, useUserStyle: boolean): Promise<PostGeneration[]> => {
     const prompt = `Generate 4 variations of social media posts about "${topic}".
     Language: ${language}, Dialect: ${dialect}.
@@ -78,7 +85,8 @@ export const generatePost = async (topic: string, dialect: string, language: str
             contents: prompt,
             config: { responseMimeType: 'application/json' }
         });
-        return JSON.parse(cleanJson(response.text || '[]'));
+        const clean = cleanJson(response.text || '[]');
+        return JSON.parse(clean);
     } catch (e) { throw new Error(safeErrorHandler(e)); }
 };
 
@@ -137,7 +145,8 @@ export const generateAdvancedReelScript = async (
             contents: prompt,
             config: { responseMimeType: 'application/json' }
         });
-        return JSON.parse(cleanJson(response.text || '{}'));
+        const clean = cleanJson(response.text || '{}');
+        return JSON.parse(clean);
     } catch (e) { throw new Error(safeErrorHandler(e)); }
 };
 
@@ -152,7 +161,8 @@ export const generateAd = async (topic: string, platform: string, tone: string, 
             contents: prompt,
             config: { responseMimeType: 'application/json' }
         });
-        return JSON.parse(cleanJson(response.text || '[]'));
+        const clean = cleanJson(response.text || '[]');
+        return JSON.parse(clean);
     } catch (e) { throw new Error(safeErrorHandler(e)); }
 };
 
@@ -196,50 +206,19 @@ export const generateSingleImagePrompt = async (topic: string, language: string)
 };
 
 export const generateWebsiteContent = async (topic: string, language: string, industry: string, tone: string): Promise<WebsiteGeneration[]> => {
-    // UPDATED PROMPT FOR HUMAN-LIKE, EXPERT, AND CREATIVE OUTPUT
     const prompt = `
-    Role: You are a Senior Creative Copywriter and Editor-in-Chief with 25+ years of experience in high-end branding, digital storytelling, and persuasion psychology. You have written for top global brands and won awards for your engaging, human-centric copy.
-
+    Role: You are a Senior Creative Copywriter and Editor-in-Chief.
     Task: Write exceptional website content for the topic: "${topic}".
-
-    **Context:**
-    - Industry: ${industry}
-    - Tone: ${tone} (Adjust your voice perfectly to match this).
-    - Language: ${language} (CRITICAL: If Arabic, use eloquent, fluid, modern Arabic. Avoid "Google Translate" style. Use rich vocabulary, emotional resonance, and correct grammar).
-
-    **Strict Writing Rules (The "Human" Filter):**
-    1. **NO AI CLICHÉS:** Banish phrases like "In today's digital world," "Unlock your potential," "We are a leading company," "Meticulously crafted," "Seamlessly integrated," "Elevate your business." These are robotic.
-    2. **Start Strong:** The first sentence must be a hook. A question, a bold statement, or a vivid scene. Never start with a definition.
-    3. **Show, Don't Tell:** Instead of saying "We are professional," describe *how* you work. Instead of "High quality," describe the texture or the result.
-    4. **Be Conversational yet Authoritative:** Write *to* the reader (Use "You"), not *at* them. Empathize with their pain points.
-    5. **Sentence Variety:** Mix short, punchy sentences with longer, flowing ones. This creates rhythm.
-
-    **Versions Required:**
-    1. **Version 1 (The Storyteller):** Focus on the narrative, the "Why," and the emotional transformation. Use metaphors and evocative language.
-    2. **Version 2 (The Strategist):** Focus on clarity, direct benefits, authority, and trust. Crisp, confident, and results-oriented.
-
-    **Structure for Each Version:**
-    - **Headline:** Catchy, benefit-driven, max 8 words.
-    - **Sub-headline:** Explains the promise clearly.
-    - **Introduction:** Captures attention immediately.
-    - **Body Content:** Substantial, detailed paragraphs (3-4 paragraphs). Not just bullet points. Flow logically.
-    - **Call to Action:** Compelling and urgent.
-
-    **Output JSON Format**:
-    [
-      {
-        "version": 1,
-        "metaDescription": "Click-worthy summary (150 chars).",
-        "seoKeywords": ["keyword1", "keyword2", ...],
-        "pageContent": "<h2>[Headline]</h2><p class='lead'>[Sub-headline]</p><p>[Body Paragraph 1...]</p><h3>[Section Header]</h3><p>[Body Paragraph 2...]</p>..."
-      },
-      {
-        "version": 2,
-        "metaDescription": "...",
-        "seoKeywords": ["..."],
-        "pageContent": "..."
-      }
-    ]
+    Context: Industry: ${industry}, Tone: ${tone}, Language: ${language}.
+    
+    Output a JSON ARRAY containing exactly 2 objects (versions).
+    Each object MUST follow this schema exactly:
+    {
+      "version": number,
+      "metaDescription": "string",
+      "seoKeywords": ["string", "string"],
+      "pageContent": "HTML string (Use <h1>, <h2>, <p>, <ul>, <li> tags)"
+    }
     `;
     
     try {
@@ -248,7 +227,8 @@ export const generateWebsiteContent = async (topic: string, language: string, in
             contents: prompt,
             config: { responseMimeType: 'application/json' }
         });
-        return JSON.parse(cleanJson(response.text || '[]'));
+        const clean = cleanJson(response.text || '[]');
+        return JSON.parse(clean);
     } catch (e) { throw new Error(safeErrorHandler(e)); }
 };
 
@@ -261,7 +241,8 @@ export const generateBrandKit = async (name: string, industry: string, descripti
             contents: prompt,
             config: { responseMimeType: 'application/json' }
         });
-        return JSON.parse(cleanJson(response.text || '{}'));
+        const clean = cleanJson(response.text || '{}');
+        return JSON.parse(clean);
     } catch (e) { throw new Error(safeErrorHandler(e)); }
 };
 
@@ -276,7 +257,8 @@ export const generateCreativeIdeas = async (topic: string, industry: string, lan
             contents: prompt,
             config: { responseMimeType: 'application/json' }
         });
-        return JSON.parse(cleanJson(response.text || '[]'));
+        const clean = cleanJson(response.text || '[]');
+        return JSON.parse(clean);
     } catch (e) { throw new Error(safeErrorHandler(e)); }
 };
 
@@ -298,11 +280,10 @@ export const generateImagePromptVariations = async (topic: string): Promise<stri
             contents: prompt,
             config: { responseMimeType: 'application/json' }
         });
-        return JSON.parse(cleanJson(response.text || '[]'));
+        const clean = cleanJson(response.text || '[]');
+        return JSON.parse(clean);
     } catch (e) { throw new Error(safeErrorHandler(e)); }
 };
-
-// --- Image Functions ---
 
 export const generateImage = async (
     prompt: string, 
@@ -314,13 +295,9 @@ export const generateImage = async (
     isHD?: boolean, 
     visualSettings?: any
 ): Promise<string> => {
-    // Model selection logic handled by caller or fallback
     const selectedModel = model || (isHD ? 'gemini-3-pro-image-preview' : 'gemini-2.5-flash-image');
-    
-    // Construct Prompt with strong emphasis on visual settings
     let finalPrompt = prompt;
     
-    // Append technical details as a strong suffix for better adherence
     const technicals = [];
     if (style) technicals.push(`**Art Style**: ${style}`);
     if (visualSettings?.angle) technicals.push(`**Camera Angle**: ${visualSettings.angle}`);
@@ -333,7 +310,6 @@ export const generateImage = async (
     
     if (isHD) finalPrompt += " High Quality, 8k, Photorealistic, HDR, Sharp focus.";
 
-    // Payload
     const parts: any[] = [{ text: finalPrompt }];
     if (referenceImages) {
         referenceImages.forEach(img => {
@@ -348,52 +324,103 @@ export const generateImage = async (
             config: {
                 imageConfig: {
                     aspectRatio: aspectRatio as any,
-                    // imageSize is only for gemini-3-pro-image-preview
                     imageSize: (selectedModel === 'gemini-3-pro-image-preview' && isHD) ? '2K' : undefined
                 }
             }
         });
         
-        // Extract image
-        for (const part of response.candidates?.[0]?.content?.parts || []) {
-            if (part.inlineData) {
-                return part.inlineData.data;
-            }
+        // Safety Check
+        if (response.candidates?.[0]?.finishReason === 'SAFETY') {
+             throw new Error(SAFETY_MESSAGE);
         }
+
+        for (const part of response.candidates?.[0]?.content?.parts || []) {
+            if (part.inlineData) return part.inlineData.data;
+        }
+        
+        const textPart = response.candidates?.[0]?.content?.parts?.find(p => p.text)?.text;
+        if (textPart) throw new Error(`Generation failed (Text returned): ${textPart}`);
+
         throw new Error("No image generated.");
     } catch (e) { throw new Error(safeErrorHandler(e)); }
 };
 
+export const generateProductScene = async (
+    productImage: string,
+    mimeType: string,
+    settings: {
+        projectType: string;
+        storeName: string;
+        sceneStyle: string;
+        angle: string;
+        lighting: string;
+        realism: string;
+        removeBg: boolean;
+        effects: string[];
+        customPrompt?: string;
+        aspectRatio?: string;
+    }
+): Promise<string> => {
+    let prompt = `Professional Product Photography Transformation.
+    Subject: The main product in the provided image.
+    ${settings.removeBg ? "Action: Place the product into a completely new environment, seamlessly blended." : "Action: Enhance the existing scene professionally."}
+    
+    Context:
+    - Industry/Type: ${settings.projectType}
+    - Scene Style: ${settings.sceneStyle} (Create a fitting high-end background)
+    - Camera Angle: ${settings.angle}
+    - Lighting: ${settings.lighting}
+    - Realism Level: ${settings.realism}
+    - Special Effects: ${settings.effects.join(', ')}
+    `;
+
+    if (settings.customPrompt) {
+        prompt += `\n- Additional User Instructions: ${settings.customPrompt}`;
+    }
+
+    if (settings.storeName) {
+        prompt += `\n- Branding: Add the text "${settings.storeName}" in a subtle, elegant way in the corner using a clean RB Regular font style if possible.`;
+    }
+
+    prompt += `\n\nQuality Requirements: Masterpiece, 8k resolution, cinematic depth of field, perfect composition, sharp focus on product, commercial grade quality.`;
+
+    return generateImage(
+        prompt, 
+        'gemini-3-pro-image-preview', 
+        settings.aspectRatio || '1:1', 
+        'Cinematic', 
+        [{data: productImage, mimeType}], 
+        undefined, 
+        true 
+    );
+};
+
 export const enhanceImage = async (base64: string, mimeType: string, type: 'General' | 'Deblur' | 'Restore', level: string, aspectRatio: string): Promise<string> => {
     let prompt = "";
-    
     if (type === 'Deblur') {
         prompt = `Fix this blurred image. Sharpen details significantly, bring subject into clear focus, remove blur, high definition, retain original content but make it crisp and clear.`;
     } else if (type === 'Restore') {
         prompt = `Restore this old photo. Fix tears, scratches, and noise. Improve clarity and faces. If black and white, subtly colorize. Make it look like a high quality restored photograph.`;
     } else {
-        // General enhancement
         prompt = `Enhance this image quality. Level: ${level}. Improve lighting, texture, and details while keeping the original composition.`;
     }
-
     return generateImage(prompt, 'gemini-2.5-flash-image', aspectRatio, 'Enhanced', [{data: base64, mimeType}]);
 };
 
 export const smartEditImage = async (base64: string, mimeType: string, editPrompt: string, aspectRatio: string): Promise<string> => {
-    // Use flash-image for editing via prompt + image
     return generateImage(editPrompt, 'gemini-2.5-flash-image', aspectRatio, 'Edited', [{data: base64, mimeType}]);
 };
 
 export const analyzeForFilters = async (base64: string, mimeType: string): Promise<any> => {
-    const prompt = `Analyze this image and suggest CSS filter values to improve it.
-    Return JSON: { brightness (0-200), contrast (0-200), saturate (0-200), hue (0-360), blur (0-10), sepia (0-100) }. Defaults are brightness:100, contrast:100, saturate:100, others 0.`;
+    const prompt = `Analyze this image and suggest CSS filter values to improve it. Return JSON.`;
     try {
         const response = await generateContent({
             model: 'gemini-2.5-flash',
             contents: { parts: [{ text: prompt }, { inlineData: { data: base64, mimeType } }] },
             config: { responseMimeType: 'application/json' }
         });
-        return JSON.parse(cleanJson(response.text || '{}'));
+        const clean = cleanJson(response.text || '{}');
+        return JSON.parse(clean);
     } catch (e) { throw new Error(safeErrorHandler(e)); }
 };
 
@@ -406,7 +433,6 @@ export const blendImages = async (images: any[], description: string, aspectRati
             parts.push({ inlineData: { data: img.data, mimeType: img.mime } });
         }
     });
-    
     try {
         const response = await generateContent({
             model: 'gemini-2.5-flash-image', 
@@ -431,7 +457,6 @@ export const extractTextFromImage = async (base64: string, mimeType: string): Pr
     } catch (e) { throw new Error(safeErrorHandler(e)); }
 };
 
-// ... existing helper functions (analyzeStyle, detectStyle, etc.) remain unchanged
 export const analyzeStyle = async (text: string): Promise<string> => {
     const prompt = `Analyze the writing style of this text. Provide a detailed style profile.`;
     try {
@@ -451,7 +476,8 @@ export const detectStyle = async (base64: string, mimeType: string): Promise<any
             contents: { parts: [{ text: prompt }, { inlineData: { data: base64, mimeType } }] },
             config: { responseMimeType: 'application/json' }
         });
-        return JSON.parse(cleanJson(response.text || '{}'));
+        const clean = cleanJson(response.text || '{}');
+        return JSON.parse(clean);
     } catch (e) { throw new Error(safeErrorHandler(e)); }
 };
 
@@ -478,18 +504,8 @@ export const visualWizardAnalysis = async (base64: string, mimeType: string): Pr
 };
 
 export const suggestBlenderDescription = async (images: any[], isRetry: boolean = false): Promise<string> => {
-    let prompt = `Analyze these images and their assigned roles. Create a single, cohesive, and creative scene description that blends them together seamlessly.
-    Roles guide:
-    - Subject: The main element.
-    - Background: The setting.
-    - Style/Color/Lighting: The aesthetic references.
-    
-    Output strictly ONE paragraph describing the final image. Do not use lists. Do not use introductory text like "Here is a description".`;
-
-    if (isRetry) {
-        prompt += `\n\nIMPORTANT: Provide a DIFFERENT, alternative interpretation or composition than the obvious one. Be more creative or change the mood/lighting focus. Output ONLY the description.`;
-    }
-
+    let prompt = `Analyze these images and their assigned roles. Create a single, cohesive, and creative scene description that blends them together seamlessly.`;
+    if (isRetry) prompt += `\n\nIMPORTANT: Provide a DIFFERENT, alternative interpretation.`;
     const parts: any[] = [{ text: prompt }];
     images.forEach(img => {
         parts.push({ text: `Role: ${img.role}` });
@@ -516,12 +532,32 @@ export const suggestLogoPrompt = async (name: string, industry: string, descript
 };
 
 export const generateLogoConcepts = async (prompt: string): Promise<string[]> => {
-    // Generate 3 images sequentially or in parallel
-    const p1 = generateImage(prompt, 'gemini-2.5-flash-image', '1:1', 'Logo Design');
-    const p2 = generateImage(prompt + " Variation 2", 'gemini-2.5-flash-image', '1:1', 'Logo Design');
-    const p3 = generateImage(prompt + " Variation 3", 'gemini-2.5-flash-image', '1:1', 'Logo Design');
-    const results = await Promise.all([p1, p2, p3]);
-    return results.map(b64 => `data:image/jpeg;base64,${b64}`);
+    // IMPORTANT: Enforce "Icon Only" to prevent AI from struggling with Arabic Text
+    const forcedConstraints = " . Icon, symbol, or pictorial mark ONLY. Minimalist vector style. Do NOT include any text or letters inside the image. White background.";
+    const safePrompt = prompt + forcedConstraints;
+
+    // Use Promise.allSettled to allow partial success if some images fail
+    const promises = [
+        generateImage(safePrompt, 'gemini-2.5-flash-image', '1:1', 'Logo Design'),
+        generateImage(safePrompt + " Variation 2", 'gemini-2.5-flash-image', '1:1', 'Logo Design'),
+        generateImage(safePrompt + " Variation 3", 'gemini-2.5-flash-image', '1:1', 'Logo Design')
+    ];
+
+    const results = await Promise.allSettled(promises);
+    
+    // Extract successful images
+    const validImages = results
+        .filter(r => r.status === 'fulfilled')
+        .map(r => (r as PromiseFulfilledResult<string>).value)
+        .map(b64 => `data:image/jpeg;base64,${b64}`);
+
+    // If no images were generated, throw the error from the first rejected promise
+    if (validImages.length === 0) {
+        const firstError = results.find(r => r.status === 'rejected');
+        throw new Error((firstError as PromiseRejectedResult)?.reason?.message || "Failed to generate logos");
+    }
+
+    return validImages;
 };
 
 export const enhanceGraphicDesignPrompt = async (prompt: string, style: string, colors: string[], isArabic: boolean, type: string): Promise<string> => {
@@ -530,10 +566,7 @@ export const enhanceGraphicDesignPrompt = async (prompt: string, style: string, 
 };
 
 export const enhancePrompt = async (prompt: string, context: string): Promise<string> => {
-    const fullPrompt = `Enhance this prompt for AI generation.
-    Original: "${prompt}"
-    Context: ${context}
-    Make it detailed, descriptive, and optimized for high-quality output. Return only the enhanced prompt.`;
+    const fullPrompt = `Enhance this prompt for AI generation. Original: "${prompt}". Context: ${context}. Return only the enhanced prompt.`;
     try {
         const response = await generateContent({
             model: 'gemini-2.5-flash',
@@ -543,38 +576,18 @@ export const enhancePrompt = async (prompt: string, context: string): Promise<st
     } catch (e) { return prompt; }
 };
 
-// --- Video ---
-
 export const generateVideo = async (prompt: string, resolution: '720p' | '1080p', aspectRatio: '16:9' | '9:16', sourceImage?: {data: string, mimeType: string}): Promise<string> => {
     try {
         const model = 'veo-3.1-fast-generate-preview';
         let operation;
-        
-        const config: any = {
-            numberOfVideos: 1,
-            resolution: resolution,
-            aspectRatio: aspectRatio
-        };
+        const config: any = { numberOfVideos: 1, resolution, aspectRatio };
 
         if (sourceImage) {
-            operation = await generateVideosWrapper({
-                model,
-                prompt,
-                image: {
-                    imageBytes: sourceImage.data,
-                    mimeType: sourceImage.mimeType
-                },
-                config
-            });
+            operation = await generateVideosWrapper({ model, prompt, image: { imageBytes: sourceImage.data, mimeType: sourceImage.mimeType }, config });
         } else {
-            operation = await generateVideosWrapper({
-                model,
-                prompt,
-                config
-            });
+            operation = await generateVideosWrapper({ model, prompt, config });
         }
 
-        // Poll (Retry not typically needed for polling unless status is 500, but logic inside getVideosOperation is SDK managed)
         while (!operation.done) {
             await new Promise(resolve => setTimeout(resolve, 5000));
             operation = await ai.operations.getVideosOperation({operation: operation});
@@ -582,33 +595,22 @@ export const generateVideo = async (prompt: string, resolution: '720p' | '1080p'
 
         const videoUri = operation.response?.generatedVideos?.[0]?.video?.uri;
         if (!videoUri) throw new Error("Video generation failed.");
-        
-        // Fetch the actual video bytes using the key
         const videoRes = await fetch(`${videoUri}&key=${process.env.API_KEY}`);
         const blob = await videoRes.blob();
         return URL.createObjectURL(blob);
-
     } catch (e) { throw new Error(safeErrorHandler(e)); }
 };
 
-// --- Audio ---
-
 export const generateSpeech = async (text: string, voice: string, language: string): Promise<string> => {
-    // Using gemini-2.5-flash-preview-tts
     try {
         const response = await generateContent({
             model: "gemini-2.5-flash-preview-tts",
             contents: [{ parts: [{ text }] }],
             config: {
                 responseModalities: [Modality.AUDIO],
-                speechConfig: {
-                    voiceConfig: {
-                        prebuiltVoiceConfig: { voiceName: voice } // e.g. 'Puck', 'Charon'
-                    }
-                }
+                speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: voice } } }
             }
         });
-        
         const audioData = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
         if (!audioData) throw new Error("No audio generated");
         return audioData;
@@ -618,8 +620,8 @@ export const generateSpeech = async (text: string, voice: string, language: stri
 export const optimizeTextForAudio = async (text: string, lang: string, dialect: string, tone: string, tashkeel: boolean, isChild: boolean): Promise<string> => {
     const prompt = `Rewrite/Optimize this text for speech synthesis (TTS).
     Language: ${lang}, Dialect: ${dialect}, Tone: ${tone}.
-    ${tashkeel ? "Ensure full Arabic diacritics (Tashkeel) for correct pronunciation." : ""}
-    ${isChild ? "Make the language simple and suitable for a child voice." : ""}
+    ${tashkeel ? "Ensure full Arabic diacritics (Tashkeel)." : ""}
+    ${isChild ? "Make simple for child voice." : ""}
     Text: "${text}"`;
     try {
         const response = await generateContent({
@@ -630,46 +632,54 @@ export const optimizeTextForAudio = async (text: string, lang: string, dialect: 
     } catch (e) { return text; }
 };
 
-// --- Chat ---
-
 export const sendChatMessage = async (history: ChatMessage[], message: string): Promise<string> => {
     try {
-        // Map history to Content objects
-        const chatHistory = history.slice(0, -1).map(h => ({
-            role: h.role,
-            parts: [{ text: h.text }]
-        }));
-
-        const chat = ai.chats.create({
-            model: 'gemini-2.5-flash',
-            history: chatHistory
-        });
-
+        const chatHistory = history.slice(0, -1).map(h => ({ role: h.role, parts: [{ text: h.text }] }));
+        const chat = ai.chats.create({ model: 'gemini-2.5-flash', history: chatHistory });
         const response = await retry(() => chat.sendMessage({ message })) as GenerateContentResponse;
         return response.text || "";
     } catch (e) { throw new Error(safeErrorHandler(e)); }
 };
 
-// --- Summary & Repurposing ---
-
 export const summarizeContent = async (text: string, file?: {data: string, mimeType: string}, language?: string, title?: string): Promise<string> => {
-    let prompt = `Summarize this content. Language: ${language || 'English'}. ${title ? `Title context: ${title}` : ''}`;
+    // Enhanced prompt for detailed summary
+    let prompt = `
+    Role: Professional Research Analyst and Editor.
+    Task: Create a **Comprehensive, Detailed, and Structured Summary** of the provided content/link.
+    
+    Strict Requirements:
+    1. **Detailed Analysis:** The summary must be extensive. Extract specific details, numbers, dates, quotes, and key arguments. Do NOT provide a short abstract.
+    2. **Structure:**
+       - **Executive Summary:** A high-level overview (1 paragraph).
+       - **Detailed Key Points:** A list of the most important takeaways.
+       - **In-Depth Analysis:** Divide the content into thematic sections with clear headings (##) and detailed explanation paragraphs.
+    3. **Tone:** Professional, engaging, and easy to read.
+    4. **Language:** Output strictly in ${language || 'English'}.
+    
+    ${title ? `Context/Title: "${title}"` : ''}
+    
+    If a URL is provided, use your browsing capabilities (grounding) to retrieve specific details from it if possible. If you cannot access the URL directly, analyze the provided text or metadata deeply.
+    `;
+    
     const parts: any[] = [{ text: prompt }];
-    if (text) parts.push({ text: `Text: ${text}` });
+    if (text) parts.push({ text: `Content/URL to Analyze: ${text}` });
     if (file) parts.push({ inlineData: { data: file.data, mimeType: file.mimeType } });
-
+    
     try {
         const response = await generateContent({
             model: 'gemini-2.5-flash',
-            contents: { parts }
+            contents: { parts },
+            config: {
+                // Enable search to help with URLs if provided in text
+                tools: [{googleSearch: {}}] 
+            }
         });
         return response.text || "";
     } catch (e) { throw new Error(safeErrorHandler(e)); }
 };
 
 export const repurposeContent = async (summary: string, format: string, language: string): Promise<string> => {
-    const prompt = `Repurpose this summary into a ${format}. Language: ${language}.
-    Summary: "${summary}"`;
+    const prompt = `Repurpose this summary into a ${format}. Language: ${language}. Summary: "${summary}"`;
     try {
         const response = await generateContent({
             model: 'gemini-2.5-flash',
@@ -680,157 +690,71 @@ export const repurposeContent = async (summary: string, format: string, language
 };
 
 export const analyzeSEO = async (text: string, file?: {data: string, mimeType: string}, language?: string): Promise<any> => {
-    const prompt = `Perform a comprehensive SEO analysis on the following content.
-    Language: ${language || 'English'}.
-    
-    Return a JSON object with:
-    - score: number (0-100) representing overall SEO quality.
-    - keywords: array of strings (top 5-10 relevant keywords found).
-    - metaDescription: string (a generated optimized meta description max 160 chars).
-    - titleSuggestion: string (an optimized title suggestion).
-    - readability: string (e.g., "Easy", "Moderate", "Hard").
-    - suggestions: array of strings (3-5 actionable tips to improve SEO).`;
-
+    const prompt = `Perform a comprehensive SEO analysis. Language: ${language || 'English'}. Return JSON with score, keywords, metaDescription, titleSuggestion, readability, suggestions.`;
     const parts: any[] = [{ text: prompt }];
     if (text) parts.push({ text: `Content Text: "${text.substring(0, 20000)}"` });
     if (file) parts.push({ inlineData: { data: file.data, mimeType: file.mimeType } });
-
     try {
         const response = await generateContent({
             model: 'gemini-2.5-flash',
             contents: { parts },
             config: { responseMimeType: 'application/json' }
         });
-        return JSON.parse(cleanJson(response.text || '{}'));
+        const clean = cleanJson(response.text || '{}');
+        return JSON.parse(clean);
     } catch (e) { throw new Error(safeErrorHandler(e)); }
 };
 
-// --- Template ---
-
 export const generateTemplatePrompt = async (industry: string): Promise<any> => {
-    const prompt = `Generate a high-quality image generation prompt for a graphic design template for: ${industry}. 
-    Also suggest a relevant single emoji icon.
-    Return JSON: { prompt, icon }.`;
+    const prompt = `Generate high-quality image prompt for graphic design template: ${industry}. Suggest emoji icon. Return JSON: { prompt, icon }.`;
     try {
         const response = await generateContent({
             model: 'gemini-2.5-flash',
             contents: prompt,
             config: { responseMimeType: 'application/json' }
         });
-        return JSON.parse(cleanJson(response.text || '{}'));
+        const clean = cleanJson(response.text || '{}');
+        return JSON.parse(clean);
     } catch (e) { return { prompt: industry, icon: '✨' }; }
 };
 
-// --- Infographic ---
-
 export const generateInfographicContent = async (topic: string, count: number, language: string): Promise<any[]> => {
     try {
-        const prompt = `Generate ${count} succinct infographic data points about "${topic}".
-        Language: ${language}.
-        Each point must have: 
-        1. A short, catchy Title (max 3 words).
-        2. A very brief Description (max 8 words).
-        3. A suggested Emoji icon representing the point.
-        Return strictly a JSON array of objects: { title, description, icon }.`;
-
+        const prompt = `Generate ${count} infographic data points about "${topic}". Language: ${language}. Return JSON array: { title, description, icon }.`;
         const response = await generateContent({
             model: 'gemini-2.5-flash',
             contents: prompt,
             config: { responseMimeType: 'application/json' }
         });
-        
-        return JSON.parse(cleanJson(response.text || '[]'));
-    } catch (error) {
-        throw new Error(safeErrorHandler(error));
-    }
+        const clean = cleanJson(response.text || '[]');
+        return JSON.parse(clean);
+    } catch (error) { throw new Error(safeErrorHandler(error)); }
 };
 
 export const generateInfographicPointsFromText = async (sourceText: string, count: number, language: string): Promise<any[]> => {
     try {
-        const prompt = `Analyze the following text and extract ${count} key infographic data points.
-        Language: ${language}.
-        Source Text: "${sourceText.substring(0, 10000)}"
-        
-        For each point, provide:
-        1. A short, catchy Title (max 5 words).
-        2. A summarized Description (max 15 words).
-        3. A suggested Emoji icon.
-        
-        Return strictly a JSON array of objects: { title, description, icon }.`;
-
+        const prompt = `Analyze text and extract ${count} infographic points. Language: ${language}. Return JSON array: { title, description, icon }.`;
         const response = await generateContent({
             model: 'gemini-2.5-flash',
-            contents: prompt,
+            contents: { parts: [{ text: prompt }, { text: `Source: ${sourceText.substring(0, 10000)}` }] },
             config: { responseMimeType: 'application/json' }
         });
-        
-        return JSON.parse(cleanJson(response.text || '[]'));
-    } catch (error) {
-        throw new Error(safeErrorHandler(error));
-    }
+        const clean = cleanJson(response.text || '[]');
+        return JSON.parse(clean);
+    } catch (error) { throw new Error(safeErrorHandler(error)); }
 };
 
-export const generateInfographic = async (
-    points: {title: string, description: string, icon: string}[],
-    style: string,
-    layout: string,
-    colors: string[],
-    aspectRatio: string,
-    langCode: 'ar' | 'en',
-    renderText: boolean
-): Promise<string> => {
+export const generateInfographic = async (points: any[], style: string, layout: string, colors: string[], aspectRatio: string, langCode: string, renderText: boolean): Promise<string> => {
     try {
-        let prompt = `Create a professional high-quality infographic.
-        Layout: ${layout}.
-        Style: ${style}.
-        Color Palette: ${colors.join(', ')}.
-        Background: Clean, solid or subtle gradient, professional.
+        let prompt = `Create infographic. Layout: ${layout}. Style: ${style}. Colors: ${colors.join(', ')}.`;
+        points.forEach((p: any, i: number) => { prompt += `\n${i+1}. [Icon: ${p.icon}] Title: "${p.title}", Desc: "${p.description}".`; });
+        if (renderText) prompt += `\nRender exact text. Language: ${langCode}.`; else prompt += `\nNo text rendering.`;
         
-        Content to visualize (Step by step):`;
-        
-        points.forEach((p, i) => {
-            prompt += `\n${i+1}. [Icon: ${p.icon}] Title: "${p.title}", Desc: "${p.description}".`;
-        });
-
-        if (renderText) {
-            prompt += `\n\nCRITICAL TEXT INSTRUCTION: Render the exact text provided for titles and descriptions directly into the image. Use a legible, modern font. Ensure high contrast.`;
-            if (langCode === 'ar') {
-                prompt += ` The text is in ARABIC. Ensure characters are connected correctly and flow Right-to-Left. Use a bold Arabic font style (like Kufi or Naskh).`;
-            }
-        } else {
-            prompt += `\n\nCRITICAL LAYOUT INSTRUCTION: Do NOT render any text. Create empty placeholders (boxes, circles, or lines) where text would go. Focus on the icons, graphics, connectors, and overall composition. I will add text later.`;
-        }
-
-        prompt += `\n\nVisual Quality: Vector art style, sharp lines, high resolution, 8k, infographic masterpiece, visually balanced, margins for text.`;
-
         let apiRatio = aspectRatio;
-        // Map common graphic design presets to closest supported model ratio
-        const ratioMap: Record<string, string> = {
-            '1:1': '1:1',
-            '4:5': '3:4',
-            'A4_V': '3:4',
-            'A5_V': '3:4',
-            'Story': '9:16',
-            '9:16': '9:16',
-            '16:9': '16:9',
-            'A4_H': '4:3',
-            'Presentation': '16:9',
-            'Twitter': '16:9',
-            'LinkedIn': '4:3'
-        };
+        const ratioMap: Record<string, string> = { '1:1': '1:1', '4:5': '3:4', 'A4_V': '3:4', 'Story': '9:16', '16:9': '16:9' };
         if (ratioMap[aspectRatio]) apiRatio = ratioMap[aspectRatio];
 
-        const base64 = await generateImage(
-            prompt, 
-            'gemini-3-pro-image-preview', 
-            apiRatio, 
-            style
-        );
-        
+        const base64 = await generateImage(prompt, 'gemini-3-pro-image-preview', apiRatio, style);
         return `data:image/jpeg;base64,${base64}`;
-
-    } catch (error) {
-        console.warn("Pro model failed, trying flash for infographic...");
-        throw new Error(safeErrorHandler(error));
-    }
+    } catch (error) { throw new Error(safeErrorHandler(error)); }
 };

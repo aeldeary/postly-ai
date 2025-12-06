@@ -3,7 +3,7 @@ import React, { useContext } from 'react';
 import { ProjectContext } from '../../contexts/ProjectContext';
 import { Theme, AppLanguage } from '../../types';
 import Button from '../Button';
-import { SparklesIcon, SunIcon, MoonIcon, CoffeeIcon } from '../Icons';
+import { SparklesIcon, SunIcon, MoonIcon, CoffeeIcon, PostlyLogo } from '../Icons';
 
 interface InitialSetupViewProps {
   onComplete: () => void;
@@ -56,8 +56,8 @@ const InitialSetupView: React.FC<InitialSetupViewProps> = ({ onComplete }) => {
         
         {/* Header */}
         <div className="text-center mb-10">
-          <div className="w-20 h-20 bg-gradient-to-br from-[#bf8339] to-[#d69545] rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-[#bf8339]/20 rotate-3">
-             <SparklesIcon className="w-10 h-10 text-[#0a1e3c]" />
+          <div className="w-24 h-24 mx-auto mb-6 flex items-center justify-center">
+             <PostlyLogo className="w-full h-full drop-shadow-2xl" />
           </div>
           <h1 className={`text-4xl md:text-5xl font-bold mb-4 ${isLight ? 'text-[#0a1e3c]' : theme === 'comfort' ? 'text-[#2B2622]' : 'text-white'}`}>Postly-AI</h1>
           <p className={`text-xl font-light ${isLight ? 'text-gray-500' : theme === 'comfort' ? 'text-[#5C554E]' : 'opacity-70'}`}>

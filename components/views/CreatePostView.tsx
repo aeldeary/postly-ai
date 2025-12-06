@@ -6,14 +6,14 @@ import { Loader, ImageIcon, SparklesIcon, MagicWandIcon, ArrowsRightLeftIcon, Vi
 import { ARABIC_DIALECTS_GROUPED, INDUSTRIES_GROUPED, LANGUAGES_GROUPED, TONES_GROUPED, AD_PLATFORMS, ARCHIVE_STORAGE_KEY, REEL_MODES, REEL_PLATFORMS, REEL_DURATIONS } from '../../constants';
 import { PostGeneration, ReelResponse, AdGeneration, ArchivedItem } from '../../types';
 import * as geminiService from '../../services/geminiService';
-import { setItem, getItem, removeItem } from '../../utils/localStorage';
+import { setItem, getItem } from '../../utils/localStorage';
 import AccordionSelect from '../AccordionSelect';
 import CustomGroupedSelect from '../CustomGroupedSelect';
 import CopyButton from '../CopyButton';
 import ExportMenu from '../ExportMenu';
 
 const CreatePostView: React.FC = () => {
-  const { topic, tone, language, dialect, industry, styleProfile, updateProjectState, appLanguage } = useContext(ProjectContext);
+  const { topic, tone, language, dialect, industry, styleProfile, updateProjectState, appLanguage, activeDraft } = useContext(ProjectContext);
   const isAr = appLanguage === 'ar';
   
   const [localTopic, setLocalTopic] = useState(topic);
@@ -42,23 +42,23 @@ const CreatePostView: React.FC = () => {
   const [isTranslating, setIsTranslating] = useState<Record<number, boolean>>({});
   const [isRegeneratingPrompt, setIsRegeneratingPrompt] = useState<Record<number, boolean>>({});
 
-  // Check for restored draft
+  // Check for restored draft from Context
   useEffect(() => {
-      const draft = getItem<ArchivedItem>('editDraft');
-      if (draft) {
-          if (draft.type === 'Post') {
+      if (activeDraft) {
+          if (activeDraft.type === 'Post') {
               setMode('Post');
-              setPostGenerations(draft.content);
-          } else if (draft.type === 'Reel') {
+              setPostGenerations(activeDraft.content);
+          } else if (activeDraft.type === 'Reel') {
               setMode('Reel');
-              setReelResponse(draft.content);
-          } else if (draft.type === 'Ad') {
+              setReelResponse(activeDraft.content);
+          } else if (activeDraft.type === 'Ad') {
               setMode('Ad');
-              setAdGenerations(draft.content);
+              setAdGenerations(activeDraft.content);
           }
-          removeItem('editDraft');
+          // Clear draft from context to avoid re-applying on next render/nav
+          updateProjectState({ activeDraft: null });
       }
-  }, []);
+  }, [activeDraft]);
 
   const AD_PLATFORM_GROUPS = useMemo(() => [{ 
       label: isAr ? 'المنصات الإعلانية' : 'Ad Platforms', 
@@ -197,11 +197,14 @@ const CreatePostView: React.FC = () => {
   };
   
   const handleGenerateSceneImages = async () => {
-      if (!reelResponse || !reelResponse.versions[activeReelVersion]) return;
+      // Capture the active version index at the start to avoid race conditions if user switches tabs
+      const targetVersionIndex = activeReelVersion;
+
+      if (!reelResponse || !reelResponse.versions[targetVersionIndex]) return;
       
       setGeneratingSceneImages(true);
       try {
-          const currentScript = reelResponse.versions[activeReelVersion];
+          const currentScript = reelResponse.versions[targetVersionIndex];
           const updatedScenes = await Promise.all(currentScript.scenes.map(async (scene) => {
               if (scene.imageUrl) return scene; // Already generated
 
@@ -222,15 +225,29 @@ const CreatePostView: React.FC = () => {
               }
           }));
 
-          // Update state deeply
-          const newResponse = { ...reelResponse };
-          newResponse.versions[activeReelVersion].scenes = updatedScenes;
-          setReelResponse(newResponse);
+          // Update state deeply and correctly (Functional Update)
+          setReelResponse(prev => {
+              if (!prev) return null;
+              
+              // Deep copy the specific version being updated
+              const newVersions = [...prev.versions];
+              newVersions[targetVersionIndex] = {
+                  ...newVersions[targetVersionIndex],
+                  scenes: updatedScenes
+              };
+
+              return { ...prev, versions: newVersions };
+          });
           
-          // Update archive
+          // Update archive manually if needed (Note: This might still suffer from race conditions on the Archive object itself if not handled carefully, 
+          // but fixing the UI state above is the primary requirement. For archive, we grab fresh state.)
           const archive = getItem(ARCHIVE_STORAGE_KEY, []);
           if (archive.length > 0 && archive[0].type === 'Reel') {
-             archive[0].content = newResponse;
+             // We reconstruct what the new object *should* look like based on our local update
+             const updatedReelContent = { ...reelResponse };
+             updatedReelContent.versions[targetVersionIndex].scenes = updatedScenes;
+             
+             archive[0].content = updatedReelContent;
              setItem(ARCHIVE_STORAGE_KEY, archive);
           }
 

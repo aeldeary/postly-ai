@@ -1,171 +1,194 @@
 
 import React, { useContext } from 'react';
 import { ProjectContext } from '../../contexts/ProjectContext';
+import { Tab } from '../../types';
+import { UI_TRANSLATIONS } from '../../constants';
 import { 
-  CreatePostIcon, WebsiteIcon, ImageIcon, StyleIcon, ArchiveIcon, 
+  HomeIcon, CreatePostIcon, WebsiteIcon, ImageIcon, StyleIcon, ArchiveIcon, 
   LightBulbIcon, DocumentTextIcon, MagicWandIcon, PaintBrushIcon, 
   TemplateIcon, ChartBarIcon, VideoCameraIcon, SpeakerWaveIcon, 
-  ChatBubbleIcon 
+  SparklesIcon, BoltIcon, FingerPrintIcon, SwatchIcon, ShoppingBagIcon, CogIcon, InfoIcon, PostlyLogo
 } from '../Icons';
 
-const AboutView: React.FC = () => {
+interface AboutViewProps {
+  setActiveTab: (tab: Tab) => void;
+}
+
+const AboutView: React.FC<AboutViewProps> = ({ setActiveTab }) => {
   const { appLanguage, theme } = useContext(ProjectContext);
   const isAr = appLanguage === 'ar';
   const isLight = theme === 'light';
+  const isComfort = theme === 'comfort';
+  const t = UI_TRANSLATIONS;
 
-  const features = [
+  // Dynamic Styles based on theme
+  const cardClass = isLight 
+    ? 'bg-white border-gray-200 shadow-sm' 
+    : isComfort 
+    ? 'bg-[#FFFCF8] border-[#D7CCC8] shadow-sm'
+    : 'bg-white/5 border-white/10 hover:bg-white/10';
+
+  const textHeadClass = isLight || isComfort ? 'text-[#3E2723]' : 'text-white';
+  const textBodyClass = isLight || isComfort ? 'text-[#5D4037]' : 'text-white/70';
+
+  // Exact same list as Sidebar
+  const toolsList = [
+    { tab: Tab.Home, icon: <HomeIcon className="w-5 h-5" />, label: t.dashboard },
+    { tab: Tab.IdeaGenerator, icon: <LightBulbIcon className="w-5 h-5" />, label: t.ideaGenerator },
+    { tab: Tab.InstantSummary, icon: <DocumentTextIcon className="w-5 h-5" />, label: t.instantSummary },
+    { tab: Tab.CreatePost, icon: <CreatePostIcon className="w-5 h-5" />, label: t.contentStudio },
+    { tab: Tab.WebsiteContent, icon: <WebsiteIcon className="w-5 h-5" />, label: t.websiteContent },
+    { tab: Tab.AIImages, icon: <ImageIcon className="w-5 h-5" />, label: t.imageStudio },
+    { tab: Tab.ProfessionalProduct, icon: <ShoppingBagIcon className="w-5 h-5" />, label: t.professionalProduct },
+    { tab: Tab.BrandKit, icon: <MagicWandIcon className="w-5 h-5" />, label: t.brandIdentity },
+    { tab: Tab.GraphicDesigner, icon: <PaintBrushIcon className="w-5 h-5" />, label: t.graphicDesigner },
+    { tab: Tab.Templates, icon: <TemplateIcon className="w-5 h-5" />, label: t.templates },
+    { tab: Tab.InfographicDesigner, icon: <ChartBarIcon className="w-5 h-5" />, label: t.infographicDesigner },
+    { tab: Tab.CreateVideo, icon: <VideoCameraIcon className="w-5 h-5" />, label: t.createVideo },
+    { tab: Tab.CreateAudio, icon: <SpeakerWaveIcon className="w-5 h-5" />, label: t.createAudio },
+    { tab: Tab.StyleTraining, icon: <StyleIcon className="w-5 h-5" />, label: t.styleTrainer },
+    { tab: Tab.Archive, icon: <ArchiveIcon className="w-5 h-5" />, label: t.archive },
+    { tab: Tab.Settings, icon: <CogIcon className="w-5 h-5" />, label: t.settings },
+    { tab: Tab.About, icon: <InfoIcon className="w-5 h-5" />, label: t.about },
+  ];
+
+  const sections = [
     {
-      icon: <LightBulbIcon className="w-8 h-8" />,
-      titleAr: 'مولد الأفكار',
-      titleEn: 'Idea Generator',
-      descAr: 'توليد أفكار فيرال، استراتيجيات تسويقية، وتحليل للجمهور المستهدف.',
-      descEn: 'Generate viral ideas, marketing strategies, and target audience analysis.'
+      titleAr: 'صناعة المحتوى النصي',
+      titleEn: 'Text Content Creation',
+      descAr: 'اكتب منشورات، مقالات، سيناريوهات فيديو، وإعلانات بأي لهجة عربية أو لغة عالمية.',
+      descEn: 'Write posts, articles, scripts, and ads in any Arabic dialect or global language.',
+      icon: <CreatePostIcon className="w-6 h-6 text-[#bf8339]" />
     },
     {
-      icon: <DocumentTextIcon className="w-8 h-8" />,
-      titleAr: 'الملخص الفوري',
-      titleEn: 'Instant Summary',
-      descAr: 'تلخيص الفيديوهات والمقالات الطويلة وإعادة تدويرها لمنصات التواصل.',
-      descEn: 'Summarize long videos and articles and repurpose them for social media.'
+      titleAr: 'الإنتاج البصري (صور وفيديو)',
+      titleEn: 'Visual Production',
+      descAr: 'حوّل خيالك إلى صور واقعية، تصاميم جرافيك، انفوجرافيك، وحتى مقاطع فيديو سينمائية.',
+      descEn: 'Turn imagination into realistic photos, graphic designs, infographics, and cinematic videos.',
+      icon: <ImageIcon className="w-6 h-6 text-[#bf8339]" />
     },
     {
-      icon: <CreatePostIcon className="w-8 h-8" />,
-      titleAr: 'استوديو المحتوى',
-      titleEn: 'Content Studio',
-      descAr: 'كتابة منشورات، سيناريوهات ريلز، وإعلانات احترافية بضغطة زر.',
-      descEn: 'Write posts, reels scripts, and professional ads with one click.'
-    },
-    {
-      icon: <WebsiteIcon className="w-8 h-8" />,
-      titleAr: 'محتوى المواقع (SEO)',
-      titleEn: 'Web Content SEO',
-      descAr: 'إنشاء مقالات وصفحات هبوط متوافقة مع محركات البحث (SEO).',
-      descEn: 'Create SEO-optimized articles and landing pages.'
-    },
-    {
-      icon: <ImageIcon className="w-8 h-8" />,
-      titleAr: 'استوديو الصور',
-      titleEn: 'Image Studio',
-      descAr: 'توليد صور بالذكاء الاصطناعي، تعديل ذكي، ودمج الصور.',
-      descEn: 'AI image generation, smart editing, and image blending.'
-    },
-    {
-      icon: <VideoCameraIcon className="w-8 h-8" />,
-      titleAr: 'صانع الفيديو (Veo)',
-      titleEn: 'Video Creator (Veo)',
-      descAr: 'تحويل النصوص والصور إلى مقاطع فيديو سينمائية عالية الدقة.',
-      descEn: 'Turn text and images into high-definition cinematic videos.'
-    },
-    {
-      icon: <SpeakerWaveIcon className="w-8 h-8" />,
-      titleAr: 'استوديو الصوت',
+      titleAr: 'الاستوديو الصوتي',
       titleEn: 'Audio Studio',
-      descAr: 'تحويل النص إلى كلام (TTS) بنبرات ولهجات عربية واقعية.',
-      descEn: 'Text-to-Speech (TTS) with realistic Arabic tones and dialects.'
+      descAr: 'حول النصوص إلى تعليق صوتي احترافي بنبرات بشرية واقعية ولهجات متعددة.',
+      descEn: 'Convert text to professional voiceovers with realistic human tones and dialects.',
+      icon: <SpeakerWaveIcon className="w-6 h-6 text-[#bf8339]" />
     },
     {
-      icon: <PaintBrushIcon className="w-8 h-8" />,
-      titleAr: 'مصمم الجرافيك',
-      titleEn: 'Graphic Designer',
-      descAr: 'تصميم بوسترات إعلانية وموك أب (Mockups) للمنتجات.',
-      descEn: 'Design advertising posters and product mockups.'
-    },
-    {
-      icon: <ChartBarIcon className="w-8 h-8" />,
-      titleAr: 'صانع الانفوجرافيك',
-      titleEn: 'Infographic Maker',
-      descAr: 'تحويل البيانات المعقدة إلى تصاميم بصرية سهلة الفهم.',
-      descEn: 'Turn complex data into easy-to-understand visual designs.'
-    },
-    {
-      icon: <MagicWandIcon className="w-8 h-8" />,
-      titleAr: 'هوية البراند',
-      titleEn: 'Brand Kit',
-      descAr: 'بناء هوية كاملة: شعارات، ألوان، ونبرة صوت للعلامة التجارية.',
-      descEn: 'Build a full identity: logos, colors, and brand voice.'
-    },
-    {
-      icon: <TemplateIcon className="w-8 h-8" />,
-      titleAr: 'مكتبة القوالب',
-      titleEn: 'Templates',
-      descAr: 'قوالب جاهزة لجميع المجالات مع إمكانية إعادة الصياغة.',
-      descEn: 'Ready-to-use templates for all industries with remixing capabilities.'
-    },
-    {
-      icon: <StyleIcon className="w-8 h-8" />,
-      titleAr: 'مدرب الأسلوب',
-      titleEn: 'Style Trainer',
-      descAr: 'تدريب الذكاء الاصطناعي ليقلد أسلوبك الخاص في الكتابة.',
-      descEn: 'Train AI to mimic your unique writing style.'
-    },
-    {
-      icon: <ChatBubbleIcon className="w-8 h-8" />,
-      titleAr: 'المساعد الذكي',
-      titleEn: 'Smart Assistant',
-      descAr: 'بوت دردشة ذكي للمساعدة في العصف الذهني وحل المشكلات.',
-      descEn: 'Smart chatbot to assist with brainstorming and problem solving.'
-    },
-    {
-      icon: <ArchiveIcon className="w-8 h-8" />,
-      titleAr: 'الأرشيف الشامل',
-      titleEn: 'Comprehensive Archive',
-      descAr: 'حفظ واسترجاع وتصدير جميع أعمالك السابقة بسهولة.',
-      descEn: 'Save, retrieve, and export all your past work easily.'
-    },
+      titleAr: 'التخصيص والهوية',
+      titleEn: 'Personalization & Brand',
+      descAr: 'درب الذكاء الاصطناعي على أسلوبك الخاص وابنِ هوية بصرية كاملة لعلامتك التجارية.',
+      descEn: 'Train AI on your unique style and build a full visual identity for your brand.',
+      icon: <FingerPrintIcon className="w-6 h-6 text-[#bf8339]" />
+    }
   ];
 
   return (
     <div className="space-y-12 animate-fade-in pb-20">
-      {/* Hero Section */}
-      <div className="text-center space-y-6 py-10 relative overflow-hidden rounded-3xl bg-gradient-to-b from-[#bf8339]/10 to-transparent border border-white/5">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-96 bg-[#bf8339]/20 rounded-full blur-[100px] -z-10"></div>
+      
+      {/* 1. Hero / Intro Section */}
+      <div className={`text-center py-12 px-6 rounded-3xl relative overflow-hidden border ${isLight ? 'bg-white border-gray-200' : isComfort ? 'bg-[#F9F7F2] border-[#D7CCC8]' : 'bg-[#0a1e3c]/60 border-white/10'}`}>
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-96 bg-[#bf8339]/10 rounded-full blur-[100px] -z-10"></div>
         
-        <h2 className="text-5xl md:text-6xl font-bold text-[#bf8339] mb-4 drop-shadow-sm">Postly-AI</h2>
-        <p className={`text-xl md:text-2xl max-w-3xl mx-auto leading-relaxed font-light ${isLight ? 'text-[#0a1e3c]' : 'text-white/90'}`}>
-          {isAr ? 'منصتك الإبداعية المتكاملة' : 'The All-in-One AI Powered Creative Platform'}
-          <br />
-          <span className={`text-base mt-3 block ${isLight ? 'text-gray-500' : 'text-white/50'}`}>
-            {isAr ? 'كل الأدوات التي تحتاجها لإنشاء محتوى احترافي في مكان واحد.' : 'All the tools you need to create professional content in one place.'}
-          </span>
+        <div className="w-24 h-24 mx-auto mb-6 flex items-center justify-center">
+             <PostlyLogo className="w-full h-full drop-shadow-xl" />
+        </div>
+        
+        <h1 className={`text-4xl md:text-5xl font-bold mb-4 ${textHeadClass}`}>
+          Postly-AI
+        </h1>
+        <p className={`text-xl max-w-3xl mx-auto leading-relaxed ${textBodyClass}`}>
+          {isAr 
+            ? 'منصتك الشاملة للإبداع الرقمي. نجمع بين قوة الذكاء الاصطناعي وفهم اللغة العربية واللهجات المحلية لمساعدتك في إنشاء محتوى احترافي متكامل في ثوانٍ.' 
+            : 'Your comprehensive platform for digital creativity. Combining AI power with deep understanding of Arabic language and dialects to help you create professional content in seconds.'}
         </p>
       </div>
 
-      {/* Features Grid */}
+      {/* 2. Why Postly? (Value Proposition) */}
       <div>
-        <h3 className={`text-center text-2xl font-bold mb-10 ${isLight ? 'text-[#0a1e3c]' : 'text-white'}`}>
-            {isAr ? 'اكتشف قوة Postly-AI' : 'Discover the Power of Postly-AI'}
+        <h3 className={`text-2xl font-bold mb-6 px-2 flex items-center gap-2 ${textHeadClass}`}>
+            <BoltIcon className="w-6 h-6 text-[#bf8339]" />
+            {isAr ? 'ماذا يمكنك أن تفعل؟' : 'What can you do?'}
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {sections.map((sec, idx) => (
+                <div key={idx} className={`p-6 rounded-2xl border transition-all duration-300 hover:-translate-y-1 ${cardClass}`}>
+                    <div className="flex items-start gap-4">
+                        <div className={`p-3 rounded-xl ${isLight || isComfort ? 'bg-[#bf8339]/10' : 'bg-white/10'}`}>
+                            {sec.icon}
+                        </div>
+                        <div>
+                            <h4 className={`text-lg font-bold mb-2 ${textHeadClass}`}>
+                                {isAr ? sec.titleAr : sec.titleEn}
+                            </h4>
+                            <p className={`text-sm leading-relaxed ${textBodyClass}`}>
+                                {isAr ? sec.descAr : sec.descEn}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            ))}
+        </div>
+      </div>
+
+      {/* 3. Unique Selling Points */}
+      <div className={`p-8 rounded-3xl border ${isLight ? 'bg-orange-50 border-orange-100' : isComfort ? 'bg-[#EFEBE0] border-[#D7CCC8]' : 'bg-[#bf8339]/10 border-[#bf8339]/20'}`}>
+          <h3 className={`text-xl font-bold mb-4 ${textHeadClass}`}>
+              {isAr ? 'لماذا Postly-AI مختلف؟' : 'Why Postly-AI is different?'}
+          </h3>
+          <ul className={`space-y-3 ${textBodyClass}`}>
+              <li className="flex items-start gap-3">
+                  <span className="text-[#bf8339] mt-1">✓</span>
+                  <span>
+                      {isAr ? 'دعم كامل للهجات العربية (السعودية، المصرية، الخليجية، وغيرها) في الكتابة والصوت.' : 'Full support for Arabic dialects (Saudi, Egyptian, Gulf, etc.) in writing and voice.'}
+                  </span>
+              </li>
+              <li className="flex items-start gap-3">
+                  <span className="text-[#bf8339] mt-1">✓</span>
+                  <span>
+                      {isAr ? 'خاصية "تدريب الأسلوب" تجعل الذكاء الاصطناعي يكتب بنفس طريقتك وشخصيتك.' : '"Style Training" feature makes AI write exactly in your tone and persona.'}
+                  </span>
+              </li>
+              <li className="flex items-start gap-3">
+                  <span className="text-[#bf8339] mt-1">✓</span>
+                  <span>
+                      {isAr ? 'أدوات متخصصة للسوق المحلي: تحويل صور المنتجات، تصميم البوسترات، وتحليل الجمهور.' : 'Specialized tools for local market: Product photo transformation, poster design, and audience analysis.'}
+                  </span>
+              </li>
+              <li className="flex items-start gap-3">
+                  <span className="text-[#bf8339] mt-1">✓</span>
+                  <span>
+                      {isAr ? 'الكل في واحد: لا داعي للتنقل بين تطبيقات مختلفة للنصوص والصور والفيديو.' : 'All-in-One: No need to switch between different apps for text, images, and video.'}
+                  </span>
+              </li>
+          </ul>
+      </div>
+
+      {/* 4. Tools Catalog Grid */}
+      <div>
+        <h3 className={`text-2xl font-bold mb-6 px-2 flex items-center gap-2 ${textHeadClass}`}>
+            <SwatchIcon className="w-6 h-6 text-[#bf8339]" />
+            {isAr ? 'كتالوج الأدوات' : 'Tools Catalog'}
         </h3>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {features.map((feature, idx) => (
-            <div 
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+          {toolsList.map((tool, idx) => (
+            <button 
               key={idx} 
-              className={`p-6 rounded-2xl border transition-all duration-300 group hover:-translate-y-2 hover:shadow-xl relative overflow-hidden ${
-                  isLight 
-                  ? 'bg-white border-gray-200 hover:border-[#bf8339] shadow-sm' 
-                  : 'bg-white/5 border-white/10 hover:border-[#bf8339] hover:bg-white/10'
-              }`}
+              onClick={() => setActiveTab(tool.tab)}
+              className={`p-4 rounded-xl border flex flex-col items-center justify-center text-center gap-3 transition-all hover:border-[#bf8339] hover:scale-105 group ${cardClass}`}
             >
-              {/* Background Glow on Hover */}
-              <div className="absolute -right-10 -top-10 w-32 h-32 bg-[#bf8339]/10 rounded-full blur-2xl group-hover:bg-[#bf8339]/20 transition-colors"></div>
-
-              <div className={`w-14 h-14 rounded-xl flex items-center justify-center mb-6 shadow-lg transition-transform group-hover:scale-110 ${
-                  isLight ? 'bg-[#bf8339]/10 text-[#bf8339]' : 'bg-[#bf8339]/20 text-[#bf8339]'
-              }`}>
-                {feature.icon}
+              <div className={`p-2 rounded-full transition-colors ${isLight || isComfort ? 'bg-[#bf8339]/10 text-[#bf8339]' : 'bg-[#bf8339]/20 text-[#bf8339]'}`}>
+                {tool.icon}
               </div>
-              
-              <h3 className={`text-lg font-bold mb-3 ${isLight ? 'text-[#0a1e3c]' : 'text-white'}`}>
-                  {isAr ? feature.titleAr : feature.titleEn}
-              </h3>
-              
-              <p className={`text-sm leading-relaxed ${isLight ? 'text-gray-600' : 'text-white/60'}`}>
-                {isAr ? feature.descAr : feature.descEn}
-              </p>
-            </div>
+              <span className={`text-xs font-bold transition-colors group-hover:text-[#bf8339] ${textHeadClass}`}>
+                  {typeof tool.label === 'string' ? tool.label : tool.label[appLanguage]}
+              </span>
+            </button>
           ))}
         </div>
       </div>
+
     </div>
   );
 };

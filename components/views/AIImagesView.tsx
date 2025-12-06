@@ -4,19 +4,20 @@ import { ProjectContext } from '../../contexts/ProjectContext';
 import Button from '../Button';
 import { Loader, ImageIcon, TrashIcon, AdjustmentsHorizontalIcon, FingerPrintIcon, BlenderIcon, SparklesIcon, ArrowsRightLeftIcon, PhotoIcon, MagicWandIcon, SwatchIcon, EyeIcon } from '../Icons';
 import * as geminiService from '../../services/geminiService';
-import { setItem, getItem, removeItem } from '../../utils/localStorage';
+import { setItem, getItem } from '../../utils/localStorage';
 import { IMAGE_MODELS, UNIFIED_IMAGE_STYLES, ARCHIVE_STORAGE_KEY, UI_TRANSLATIONS, ASPECT_RATIOS_GROUPED, CAMERA_ANGLES, LIGHTING_STYLES, PRODUCT_SCENES_GROUPED } from '../../constants';
 import CustomGroupedSelect from '../CustomGroupedSelect';
 import ImageBlenderView from './ImageBlenderView';
 import CopyButton from '../CopyButton';
 import ExportMenu from '../ExportMenu';
 import { ArchivedItem } from '../../types';
+import ImageCropperModal from '../ImageCropperModal';
 
 type SubTab = 'create' | 'enhance' | 'smart_edit' | 'color' | 'blend';
 type EnhancementMode = 'General' | 'Deblur' | 'Restore';
 
 const AIImagesView: React.FC = () => {
-  const { topic, appLanguage, theme } = useContext(ProjectContext);
+  const { topic, appLanguage, theme, activeDraft, updateProjectState } = useContext(ProjectContext);
   const isAr = appLanguage === 'ar';
   const t = UI_TRANSLATIONS;
   const isComfort = theme === 'comfort';
@@ -60,15 +61,20 @@ const AIImagesView: React.FC = () => {
   const uploadFileRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // Check for restored draft
+  // CROPPER STATE
+  const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
+  const [cropTarget, setCropTarget] = useState<'reference' | 'edit'>('reference');
+  const [pendingFileType, setPendingFileType] = useState('image/jpeg');
+
+  // Check for restored draft from Context
   useEffect(() => {
-      const draft = getItem<ArchivedItem>('editDraft');
-      if (draft && draft.type === 'Image') {
-          setCurrentImage(draft.content);
-          setOriginalImage(draft.content);
-          removeItem('editDraft');
+      if (activeDraft && activeDraft.type === 'Image') {
+          setCurrentImage(activeDraft.content);
+          setOriginalImage(activeDraft.content);
+          // Clean up context
+          updateProjectState({ activeDraft: null });
       }
-  }, []);
+  }, [activeDraft]);
 
   // Group Memos
   const styleGroups = useMemo(() => UNIFIED_IMAGE_STYLES.map(g => ({
@@ -92,6 +98,23 @@ const AIImagesView: React.FC = () => {
           value: o.value
       }))
   })), [isAr]);
+
+  // New Dropdown Groups for Camera & Lighting
+  const cameraAngleGroups = useMemo(() => [{
+      label: isAr ? 'زوايا التصوير' : 'Camera Angles',
+      options: CAMERA_ANGLES.map(a => ({
+          label: `${a.icon} ${isAr ? a.label.ar : a.label.en}`,
+          value: a.value
+      }))
+  }], [isAr]);
+
+  const lightingGroups = useMemo(() => [{
+      label: isAr ? 'أنماط الإضاءة' : 'Lighting Styles',
+      options: LIGHTING_STYLES.map(l => ({
+          label: `${l.icon} ${isAr ? l.label.ar : l.label.en}`,
+          value: l.value
+      }))
+  }], [isAr]);
 
   // Helper for ratio detection - Snaps to supported API ratios
   const getClosestAspectRatio = (width: number, height: number): string => {
@@ -122,36 +145,52 @@ const AIImagesView: React.FC = () => {
       setError(null);
       const file = e.target.files?.[0];
       if (!file) return;
+      
       const reader = new FileReader();
       reader.onload = () => {
-          const res = reader.result as string;
-          setCurrentImage(res);
-          setOriginalImage(res); // Set base
-          
-          // Auto Detect Aspect Ratio strictly for API compatibility
-          const img = new Image();
-          img.src = res;
-          img.onload = () => {
-              const r = getClosestAspectRatio(img.width, img.height);
-              setDetectedRatio(r);
-          };
-
-          // Reset filters
-          setFilters({ brightness: 100, contrast: 100, saturate: 100, hue: 0, blur: 0, sepia: 0 });
+          setCropImageSrc(reader.result as string);
+          setPendingFileType(file.type);
+          setCropTarget('edit');
       };
       reader.readAsDataURL(file);
+      // Reset input
+      e.target.value = '';
   };
 
   const handleReferenceUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (!file) return;
       if (referenceImages.length >= 10) return alert(isAr ? "الحد الأقصى 10 صور" : "Max 10 images");
+      
       const reader = new FileReader();
       reader.onloadend = () => {
-          setReferenceImages([...referenceImages, { id: Date.now().toString(), data: (reader.result as string).split(',')[1], mimeType: file.type }]);
-          if(referenceFileRef.current) referenceFileRef.current.value = '';
+          setCropImageSrc(reader.result as string);
+          setPendingFileType(file.type);
+          setCropTarget('reference');
       };
       reader.readAsDataURL(file);
+      // Reset input
+      e.target.value = '';
+  };
+
+  const handleCropConfirm = (croppedBase64: string) => {
+      if (cropTarget === 'reference') {
+          setReferenceImages([...referenceImages, { id: Date.now().toString(), data: croppedBase64.split(',')[1], mimeType: 'image/jpeg' }]);
+      } else {
+          // Edit Mode
+          setCurrentImage(croppedBase64);
+          setOriginalImage(croppedBase64);
+          
+          // Auto Detect Aspect Ratio
+          const img = new Image();
+          img.src = croppedBase64;
+          img.onload = () => {
+              const r = getClosestAspectRatio(img.width, img.height);
+              setDetectedRatio(r);
+          };
+          setFilters({ brightness: 100, contrast: 100, saturate: 100, hue: 0, blur: 0, sepia: 0 });
+      }
+      setCropImageSrc(null);
   };
 
   const removeReference = (id: string) => {
@@ -469,45 +508,28 @@ const AIImagesView: React.FC = () => {
                                 </div>
                             </div>
 
-                            {/* Visual Presets */}
+                            {/* Visual Presets - UPDATED TO DROPDOWNS */}
                             <div className="bg-[#0a1e3c]/60 backdrop-blur border border-white/10 rounded-xl p-5 shadow-lg">
                                 <h3 className="text-[#bf8339] font-bold mb-4 text-xs uppercase tracking-widest flex justify-between">
                                     {isAr ? 'الإخراج البصري' : 'Visual Output'}
                                     <span className="text-[9px] text-white/40 font-normal">{isAr ? 'اضغط للإلغاء' : 'Click to deselect'}</span>
                                 </h3>
                                 
-                                {/* Angles Grid */}
-                                <div className="mb-4">
-                                    <label className="text-[10px] text-white/50 block mb-2">{isAr ? 'زاوية التصوير' : 'Camera Angle'}</label>
-                                    <div className="flex flex-wrap gap-2">
-                                        {CAMERA_ANGLES.map((a, i) => (
-                                            <button 
-                                                key={i} 
-                                                onClick={() => setCameraAngle(prev => prev === a.value ? '' : a.value)} 
-                                                className={`px-3 py-1.5 rounded-lg text-[10px] font-bold border transition flex items-center gap-1.5 ${cameraAngle === a.value ? 'bg-[#bf8339] border-[#bf8339] text-[#0a1e3c]' : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:border-white/30'}`}
-                                            >
-                                                <span>{a.icon}</span>
-                                                <span>{isAr ? a.label.ar : a.label.en}</span>
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                {/* Lighting Grid */}
-                                <div className="mb-4">
-                                    <label className="text-[10px] text-white/50 block mb-2">{isAr ? 'الإضاءة' : 'Lighting'}</label>
-                                    <div className="flex flex-wrap gap-2">
-                                        {LIGHTING_STYLES.map((l, i) => (
-                                            <button 
-                                                key={i} 
-                                                onClick={() => setLighting(prev => prev === l.value ? '' : l.value)} 
-                                                className={`px-3 py-1.5 rounded-lg text-[10px] font-bold border transition flex items-center gap-1.5 ${lighting === l.value ? 'bg-[#bf8339] border-[#bf8339] text-[#0a1e3c]' : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:border-white/30'}`}
-                                            >
-                                                <span>{l.icon}</span>
-                                                <span>{isAr ? l.label.ar : l.label.en}</span>
-                                            </button>
-                                        ))}
-                                    </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                    <CustomGroupedSelect
+                                        label={isAr ? 'زوايا التصوير' : 'Camera Angle'}
+                                        value={cameraAngle}
+                                        onChange={setCameraAngle}
+                                        groups={cameraAngleGroups}
+                                        placeholder={isAr ? "اختر الزاوية..." : "Select Angle..."}
+                                    />
+                                    <CustomGroupedSelect
+                                        label={isAr ? 'الإضاءة' : 'Lighting'}
+                                        value={lighting}
+                                        onChange={setLighting}
+                                        groups={lightingGroups}
+                                        placeholder={isAr ? "اختر الإضاءة..." : "Select Lighting..."}
+                                    />
                                 </div>
 
                                 {/* Scenes */}
@@ -723,6 +745,17 @@ const AIImagesView: React.FC = () => {
                     )}
                 </div>
             </div>
+        )}
+
+        {/* IMAGE CROPPER MODAL */}
+        {cropImageSrc && (
+            <ImageCropperModal
+                imageSrc={cropImageSrc}
+                onCrop={handleCropConfirm}
+                onCancel={() => setCropImageSrc(null)}
+                isAr={isAr}
+                aspectRatio={aspectRatio === '1:1' ? 1 : aspectRatio === '16:9' ? 16/9 : aspectRatio === '9:16' ? 9/16 : aspectRatio === '3:4' ? 3/4 : 4/3}
+            />
         )}
     </div>
   );

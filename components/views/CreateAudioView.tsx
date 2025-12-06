@@ -1,5 +1,4 @@
 
-
 import React, { useState, useContext, useEffect, useMemo } from 'react';
 import { ProjectContext } from '../../contexts/ProjectContext';
 import Button from '../Button';
@@ -11,7 +10,7 @@ import VoiceInput from '../VoiceInput';
 import AccordionSelect from '../AccordionSelect';
 
 const CreateAudioView: React.FC = () => {
-    const { appLanguage, language, updateProjectState } = useContext(ProjectContext);
+    const { appLanguage, language, activeDraft, updateProjectState } = useContext(ProjectContext);
     const isAr = appLanguage === 'ar';
 
     const [text, setText] = useState('');
@@ -28,6 +27,33 @@ const CreateAudioView: React.FC = () => {
     const [targetLang, setTargetLang] = useState(language);
     const [isOptimizing, setIsOptimizing] = useState(false);
     const [enableTashkeel, setEnableTashkeel] = useState(true);
+
+    // Check for restored draft from Context
+    useEffect(() => {
+        if (activeDraft && activeDraft.type === 'Audio') {
+            setText(activeDraft.content.text);
+            // Optionally try to restore voice selection if possible
+            if (activeDraft.content.voice) {
+                // The archive stores voice NAME (e.g. "Charon"), but state uses ID (e.g. "male_deep_tariq")
+                // We try to find the first ID matching this name
+                const matchingVoice = VOICE_OPTIONS.find(v => v.name === activeDraft.content.voice);
+                if (matchingVoice) {
+                    setSelectedVoiceId(matchingVoice.id);
+                }
+            }
+            // Clean up context
+            updateProjectState({ activeDraft: null });
+        }
+    }, [activeDraft]);
+
+    // Cleanup Blob URL to prevent memory leaks
+    useEffect(() => {
+        return () => {
+            if (audioSrc) {
+                URL.revokeObjectURL(audioSrc);
+            }
+        };
+    }, [audioSrc]);
 
     const localizedLanguages = useMemo(() => LANGUAGES_GROUPED.map(g => ({
         label: isAr ? g.label.ar : g.label.en,
@@ -84,6 +110,8 @@ const CreateAudioView: React.FC = () => {
         }
 
         setIsLoading(true);
+        // Revoke previous URL if exists before creating new one
+        if (audioSrc) URL.revokeObjectURL(audioSrc);
         setAudioSrc(null);
 
         try {
@@ -134,6 +162,7 @@ const CreateAudioView: React.FC = () => {
             const wavBlob = pcmToWav(base64Audio);
             const url = URL.createObjectURL(wavBlob);
             const audio = new Audio(url);
+            audio.onended = () => URL.revokeObjectURL(url); // Cleanup preview URL after playing
             audio.play();
         } catch (error) {
             console.error("Preview failed", error);

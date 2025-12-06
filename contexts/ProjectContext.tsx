@@ -16,6 +16,7 @@ const defaultState: ProjectContextValue = {
   previousGenerations: [],
   appLanguage: 'ar',
   theme: 'dark',
+  activeDraft: null,
   updateProjectState: () => {},
 };
 

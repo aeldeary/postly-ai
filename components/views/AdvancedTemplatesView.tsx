@@ -42,53 +42,67 @@ const AdvancedTemplatesView: React.FC<AdvancedTemplatesViewProps> = ({ setActive
     };
 
     const SPECIFIC_ICONS: Record<string, string> = {
-        // Business
+        // Business & Retail
         'E-Commerce Store': '🛒', 'General Trading Company': '🤝', 'Supermarket': '🥬', 'Clothing Store': '👗', 'Shoes & Bags Store': '👠',
         'Perfume & Incense Shop': '🧴', 'Gift Shop': '🎁', 'Accessories Store': '💍', 'Home Appliances Store': '📺', 'Furniture Store': '🛋️',
         'Jewelry Store': '💎', 'Car Showroom': '🚗', 'Auto Parts Company': '⚙️', 'Logistics Company': '🚚', 'International Shipping': '🚢',
-        'Advertising Agency': '📢', 'Marketing Agency': '📈',
-        // Food
-        'Restaurants': '🍽️', 'Coffee Shops': '☕', 'Bakeries & Sweets': '🥐', 'Juice Shops': '🥤', 'Chocolate Shops': '🍫', 'Fast Food': '🍔',
-        'Healthy Restaurants': '🥗', 'Food Trucks': '🚚', 'Food Supply Companies': '📦',
-        // Medical
+        'Advertising & Printing Agency': '🖨️', 'Marketing Agency': '📈', 'Advertising Agency': '📢',
+
+        // Food & Beverage
+        'Restaurants': '🍽️', 'Coffee Shops': '☕', 'Bakeries & Sweets': '🥐', 'Juice Shops': '🥤', 'Chocolate Shops': '🍫',
+        'Fast Food': '🍔', 'Healthy Restaurants': '🥗', 'Food Trucks': '🚚', 'Food Supply Companies': '📦',
+
+        // Medical & Healthcare
         'Medical Clinics': '🩺', 'Hospitals': '🏥', 'Medical Laboratories': '🔬', 'Pharmacies': '💊', 'Medical Beauty Centers': '💉',
         'Physiotherapy Centers': '🧘‍♂️', 'Dental Centers': '🦷', 'Obesity & Slimming Centers': '⚖️', 'Rehabilitation Centers': '♿',
         'Radiology & Analysis Centers': '☢️', 'Nutritionists': '🍏',
-        // Education
-        'Schools': '🏫', 'Universities': '🎓', 'Institutes': '🏛️', 'Training Centers': '👨‍🏫', 'Online Courses': '💻', 'Kids Academies': '🧸',
-        'Language Centers': '🗣️', 'Kindergartens': '🎈', 'Life Coaches': '🧭', 'Career Training': '💼', 'Tech & AI Training': '🤖',
+
+        // Education & Training
+        'Schools': '🏫', 'Universities': '🎓', 'Institutes': '🏛️', 'Training Centers': '👨‍🏫', 'Online Courses': '💻',
+        'Kids Academies': '🧸', 'Language Centers': '🗣️', 'Kindergartens': '🎈', 'Life Coaches': '🧭', 'Career Training': '💼',
+        'Tech & AI Training': '🤖',
+
         // Real Estate
         'Real Estate Developers': '🏗️', 'Real Estate Brokerage': '🤝', 'Contracting Companies': '👷', 'Interior Design Firms': '🛋️',
         'Engineering Consultancies': '📐', 'Decor & Construction': '🎨', 'Real Estate Consultancy': '🏘️',
-        // Charity
+
+        // Charity & NGOs
         'Charities': '🤝', 'Non-Profit Organizations': '🕊️', 'Seasonal Campaigns': '📢', 'Orphan Sponsorship': '👶',
         'Family Support': '👨‍👩‍👧‍👦', 'Relief Projects': '⛺', 'Donation Campaigns': '💰', 'Volunteer Groups': '🙋',
         'Water Well Projects': '💧', 'Education & Medical Aid': '🚑',
+
         // Services
         'Consulting': '💼', 'Legal Services': '⚖️', 'Travel Agencies': '✈️', 'Property Management': '🏢', 'Translation Services': '🅰️',
         'Accounting Firms': '🧮', 'Insurance Companies': '🛡️', 'Event Management': '🎉', 'Media Production': '🎥',
         'Tech & Programming': '💻', 'Freelance Content Creators': '📹', 'Photographers': '📷', 'Cleaning Services': '🧹',
         'Pest Control': '🐜', 'Security Services': '👮',
-        // Beauty
+
+        // Beauty & Wellness
         'Beauty Salons': '💇‍♀️', 'Barbershops': '💈', 'Spa Centers': '🧖', 'Fitness Centers': '🏋️', 'Yoga Centers': '🧘',
         'Fitness Coaches': '⏱️', 'Skin & Hair Care Products': '🧴',
-        // Hospitality
+
+        // Hospitality & Tourism
         'Hotels': '🏨', 'Resorts': '🏝️', 'Hotel Apartments': '🏢', 'Tourism Companies': '🗺️', 'Cruise & Boat Trips': '🚢',
         'Sports Clubs': '⚽', 'Chalets & Rest Houses': '🏡',
-        // Tech
+
+        // Tech & Digital
         'Software Development': '👨‍💻', 'Development Agencies': '🚀', 'Mobile Apps': '📱', 'Cyber Security': '🔒', 'SaaS Companies': '☁️',
         'Online Service Platforms': '🌐', 'EdTech Platforms': '🎓', 'AI Companies': '🧠', 'Gaming Companies': '🎮',
-        // Media
-        'Content Creators': '🤳', 'Influencers': '🤳', 'YouTube Channels': '▶️', 'Podcasts': '🎙️', 'Production Houses': '🎥',
+
+        // Media & Entertainment
+        'Content Creators': '🤳', 'Influencers': '✨', 'YouTube Channels': '▶️', 'Podcasts': '🎙️', 'Production Houses': '🎥',
         'Photography Studios': '📸', 'News Pages': '📰', 'Entertainment Pages': '🎭', 'Movies & Series Pages': '🍿',
+
         // Automotive
         'Car Dealerships': '🚘', 'Car Financing': '💵', 'Garages & Maintenance': '🔧', 'Car Detailing': '✨', 'Mobile Car Wash': '🚿',
         'Spare Parts & Accessories': '⚙️', 'Limousine Services': '🎩',
-        // Handmade
+
+        // Handmade Business
         'Handmade Accessories': '📿', 'Handmade Candles': '🕯️', 'Natural Soap': '🧼', 'Embroidery': '🧵', 'Knitting & Crochet': '🧶',
         'Wood Carving': '🪵', 'Painting': '🎨', 'Wooden Boxes': '📦', 'Customized Gifts': '🎁', 'Pottery & Ceramics': '🏺',
         'Handmade Fabrics': '🧣', 'Resin Art': '💧', 'Macrame': '🧶', 'Handmade Bags': '👜', 'Handmade Decor': '🖼️', 'Recycling Crafts': '♻️',
-        // Trades
+
+        // Crafts & Trades
         'Carpentry': '🔨', 'Plumbing': '🚿', 'Electrical Services': '⚡', 'Blacksmithing': '⚒️', 'Painting & Decorating': '🖌️',
         'Gypsum & Decor': '🏛️', 'Tiling & Ceramics': '🧱', 'HVAC / AC Services': '❄️', 'Sanitary Installations': '🚽', 'Welding': '💥',
         'Mechanics': '🔧', 'Auto Body Repair': '🚗', 'Aluminum Works': '🪟', 'Home Maintenance': '🏠', 'Surveying & Building': '👷‍♂️',
