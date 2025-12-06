@@ -33,6 +33,7 @@ const AIImagesView: React.FC = () => {
     const [sourceImage, setSourceImage] = useState<string | null>(null);
     const [sourceMime, setSourceMime] = useState('image/jpeg');
     const [resultImage, setResultImage] = useState<string | null>(null);
+    const [detectedRatio, setDetectedRatio] = useState<string>('1:1'); // Store detected ratio
     
     // Color Correction State
     const [brightness, setBrightness] = useState(0);
@@ -57,8 +58,18 @@ const AIImagesView: React.FC = () => {
     
     // Crop & Upload
     const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
+    const [uploadTarget, setUploadTarget] = useState<'reference' | 'feature'>('reference');
     const referenceFileRef = useRef<HTMLInputElement>(null);
     const featureFileRef = useRef<HTMLInputElement>(null); // For Color, Upscale, Restore
+
+    // Filters Constants with Slider Values
+    const PRESET_FILTERS = [
+        { value: 'Natural', label: { ar: 'طبيعي', en: 'Natural' }, settings: { b: 0, c: 0, s: 0 } },
+        { value: 'Warm', label: { ar: 'دافئ', en: 'Warm' }, settings: { b: 5, c: 5, s: 15 } },
+        { value: 'Cold', label: { ar: 'بارد', en: 'Cold' }, settings: { b: 0, c: 10, s: -25 } },
+        { value: 'Cinematic', label: { ar: 'سينمائي', en: 'Cinematic' }, settings: { b: -10, c: 30, s: -10 } },
+        { value: 'Product', label: { ar: 'منتجات', en: 'Product' }, settings: { b: 8, c: 15, s: 20 } },
+    ];
 
     // Memos for Selects
     const styleGroups = useMemo(() => UNIFIED_IMAGE_STYLES.map(g => ({
@@ -86,20 +97,77 @@ const AIImagesView: React.FC = () => {
         options: g.options.map(o => ({ label: isAr ? o.label.ar : o.label.en, value: o.value }))
     })), [isAr]);
 
-    // Handle Upload for Features
+    // --- HELPER: Detect Closest Aspect Ratio ---
+    const getClosestRatio = (width: number, height: number): string => {
+        const ratio = width / height;
+        const supported = [
+            { id: '1:1', val: 1 },
+            { id: '3:4', val: 0.75 },
+            { id: '4:3', val: 1.33 },
+            { id: '9:16', val: 0.56 },
+            { id: '16:9', val: 1.77 }
+        ];
+        
+        const closest = supported.reduce((prev, curr) => {
+            return (Math.abs(curr.val - ratio) < Math.abs(prev.val - ratio) ? curr : prev);
+        });
+        
+        return closest.id;
+    };
+
+    // Handle Upload for Features (Color, Upscale, Restore)
     const handleFeatureUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
         const reader = new FileReader();
         reader.onloadend = () => {
-            const base64 = (reader.result as string).split(',')[1];
-            setSourceImage(`data:${file.type};base64,${base64}`);
+            setCropImageSrc(reader.result as string);
+            setUploadTarget('feature');
             setSourceMime(file.type);
-            setResultImage(null); // Reset result on new upload
         };
         reader.readAsDataURL(file);
         e.target.value = '';
     };
+
+    // --- LIVE PREVIEW LOGIC (CANVAS) ---
+    const applyCanvasFilters = () => {
+        if (!sourceImage) return;
+        
+        const img = new Image();
+        img.src = sourceImage;
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return;
+
+            // Convert sliders to CSS filter string
+            // Brightness: 0 = 100%, 50 = 150%, -50 = 50%
+            // Contrast: 0 = 100%, 50 = 150%, -50 = 50%
+            // Saturation: 0 = 100%, 50 = 150%, -50 = 50%
+            const b = 100 + brightness;
+            const c = 100 + contrast;
+            const s = 100 + saturation;
+            
+            ctx.filter = `brightness(${b}%) contrast(${c}%) saturate(${s}%)`;
+            ctx.drawImage(img, 0, 0, img.width, img.height);
+            
+            // Set result immediately
+            setResultImage(canvas.toDataURL(sourceMime));
+        };
+    };
+
+    // Update live preview when sliders change (Only in Color mode)
+    useEffect(() => {
+        if (activeSubTab === 'color' && sourceImage) {
+            // Debounce slightly to improve performance on large images
+            const timeout = setTimeout(() => {
+                applyCanvasFilters();
+            }, 30); // Faster debounce for smoother feel
+            return () => clearTimeout(timeout);
+        }
+    }, [brightness, contrast, saturation, sourceImage, activeSubTab]);
 
     const handleGenerate = async () => {
         if (!prompt) return alert(isAr ? 'يرجى كتابة وصف للصورة' : 'Please enter a prompt');
@@ -132,6 +200,29 @@ const AIImagesView: React.FC = () => {
         }
     };
 
+    // Live Auto Adjust logic (Client Side)
+    const handleAutoCorrect = async () => {
+        if (!sourceImage) return alert(isAr ? 'يرجى رفع صورة' : 'Please upload an image');
+        
+        // Apply "Smart" presets instantly to the sliders
+        // This gives immediate visual feedback without an API call delay
+        setBrightness(5);
+        setContrast(15);
+        setSaturation(10);
+        setColorPreset('Auto');
+        
+        if ((window as any).toast) {
+            (window as any).toast(isAr ? 'تم تطبيق التحسين التلقائي' : 'Auto enhancements applied', 'success');
+        }
+    };
+
+    const handleApplyFilter = (presetValue: string, settings: { b: number, c: number, s: number }) => {
+        setBrightness(settings.b);
+        setContrast(settings.c);
+        setSaturation(settings.s);
+        setColorPreset(presetValue);
+    };
+
     const handleProcessImage = async () => {
         if (!sourceImage) return alert(isAr ? 'يرجى رفع صورة' : 'Please upload an image');
         setIsLoading(true);
@@ -142,11 +233,13 @@ const AIImagesView: React.FC = () => {
             const rawData = sourceImage.split(',')[1];
 
             if (activeSubTab === 'color') {
-                instructions = `Color Correction Mode. Apply the following adjustments: Brightness: ${brightness > 0 ? '+' : ''}${brightness}%, Contrast: ${contrast > 0 ? '+' : ''}${contrast}%, Saturation: ${saturation > 0 ? '+' : ''}${saturation}%. `;
-                if (colorPreset) instructions += `Apply preset style: ${colorPreset}. `;
-                instructions += "Ensure natural, balanced lighting and white balance. Keep content identical.";
+                // For manual/filter adjustments, we can either save the canvas result directly (since it's live)
+                // OR send to AI for a high-quality render. 
+                // Since the user is adjusting sliders live, we can assume the resultImage is already what they want visually.
+                // However, for higher quality output, let's ask Gemini to match these params.
+                instructions = `Color Correction Mode. Apply the following adjustments exactly: Brightness: ${brightness > 0 ? '+' : ''}${brightness}%, Contrast: ${contrast > 0 ? '+' : ''}${contrast}%, Saturation: ${saturation > 0 ? '+' : ''}${saturation}%. Ensure the output maintains high resolution.`;
                 modelPrompt = instructions;
-            } 
+            }
             else if (activeSubTab === 'upscale') {
                 instructions = `Upscale this image to ${upscaleLevel} resolution (simulated). Super resolution mode. Enhance micro-details, remove noise, sharpen edges while preserving facial features 100%. Quality: 8K Ultra-HD.`;
                 modelPrompt = instructions;
@@ -161,8 +254,8 @@ Do not modify or replace any visual element. Only enhance realism, depth, and fi
 The final image should look photographically perfect, extremely sharp yet natural, lifelike and clean — suitable for professional commercial use and close-up inspection.`;
             }
 
-            // Using the editing service wrapper
-            const res = await geminiService.processImageEdit(rawData, sourceMime, modelPrompt);
+            // Using the editing service wrapper, passing detected ratio to preserve dimensions
+            const res = await geminiService.processImageEdit(rawData, sourceMime, modelPrompt, detectedRatio);
             const fullRes = `data:image/jpeg;base64,${res}`;
             setResultImage(fullRes);
             saveToArchive(fullRes);
@@ -277,15 +370,41 @@ The final image should look photographically perfect, extremely sharp yet natura
         const file = e.target.files?.[0];
         if (!file) return;
         const reader = new FileReader();
-        reader.onloadend = () => { setCropImageSrc(reader.result as string); };
+        reader.onloadend = () => { 
+            setCropImageSrc(reader.result as string); 
+            setUploadTarget('reference');
+        };
         reader.readAsDataURL(file);
         e.target.value = '';
     };
+
     const handleCropConfirm = (croppedBase64: string) => {
-        const base64Data = croppedBase64.split(',')[1];
-        setReferenceImages([...referenceImages, { id: Date.now().toString(), data: base64Data, mimeType: 'image/jpeg' }]);
+        if (uploadTarget === 'reference') {
+            const base64Data = croppedBase64.split(',')[1];
+            setReferenceImages([...referenceImages, { id: Date.now().toString(), data: base64Data, mimeType: 'image/jpeg' }]);
+        } else {
+            // Feature Upload (Color/Upscale/Restore)
+            const base64Data = croppedBase64.split(',')[1];
+            
+            // Detect Aspect Ratio logic for restoration
+            const img = new Image();
+            img.src = croppedBase64;
+            img.onload = () => {
+                const ratio = getClosestRatio(img.width, img.height);
+                setDetectedRatio(ratio);
+                setSourceImage(croppedBase64);
+                
+                // If we are in color mode, set result immediately to source so filters apply live on it
+                if (activeSubTab === 'color') {
+                    setResultImage(croppedBase64);
+                } else {
+                    setResultImage(null); // Reset result for other modes until processed
+                }
+            };
+        }
         setCropImageSrc(null);
     };
+
     const removeReferenceImage = (id: string) => {
         setReferenceImages(referenceImages.filter(img => img.id !== id));
     };
@@ -414,6 +533,15 @@ The final image should look photographically perfect, extremely sharp yet natura
                                 <p className="text-xs text-white/70">{sourceImage ? (isAr ? 'تغيير الصورة' : 'Change Image') : (isAr ? 'ارفع صورة للتعديل' : 'Upload Image')}</p>
                             </div>
 
+                            <Button 
+                                onClick={handleAutoCorrect} 
+                                isLoading={isLoading} 
+                                className="w-full mb-6 bg-gradient-to-r from-[#bf8339] to-[#d69545] flex items-center justify-center gap-2 shadow-lg shadow-[#bf8339]/20"
+                            >
+                                <SparklesIcon className="w-4 h-4" />
+                                {isAr ? 'تعديل تلقائي بضغطة زر' : 'Auto Adjust'}
+                            </Button>
+
                             <div className="space-y-4">
                                 <div>
                                     <label className="text-xs text-white/60 mb-1 flex justify-between"><span>{isAr ? 'الإضاءة' : 'Brightness'}</span> <span>{brightness > 0 ? '+' : ''}{brightness}</span></label>
@@ -429,21 +557,28 @@ The final image should look photographically perfect, extremely sharp yet natura
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-3 gap-2 mt-6">
-                                {['Natural', 'Warm', 'Cold', 'Cinematic', 'Product'].map(p => (
-                                    <button 
-                                        key={p} 
-                                        onClick={() => setColorPreset(p)}
-                                        className={`text-[10px] py-1 rounded border ${colorPreset === p ? 'bg-[#bf8339] text-[#0a1e3c] border-[#bf8339]' : 'border-white/10 hover:bg-white/10'}`}
-                                    >
-                                        {p}
-                                    </button>
-                                ))}
+                            <div className="mt-6">
+                                <label className="text-xs font-bold text-white/80 block mb-2">{isAr ? 'إضافة فلتر' : 'Add Filter'}</label>
+                                <div className="grid grid-cols-3 gap-2">
+                                    {PRESET_FILTERS.map(filter => (
+                                        <button 
+                                            key={filter.value} 
+                                            onClick={() => handleApplyFilter(filter.value, filter.settings)}
+                                            className={`text-[10px] py-1 rounded border transition-all ${colorPreset === filter.value ? 'bg-[#bf8339] text-[#0a1e3c] border-[#bf8339] font-bold' : 'border-white/10 hover:bg-white/10'}`}
+                                        >
+                                            {isAr ? filter.label.ar : filter.label.en}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
 
-                            <Button onClick={handleProcessImage} isLoading={isLoading} className="w-full mt-6">
-                                {isAr ? 'تطبيق التعديلات' : 'Apply Auto Color Fix'}
+                            <Button onClick={handleProcessImage} isLoading={isLoading} className="w-full mt-6" variant="secondary">
+                                {isAr ? 'تطبيق التعديلات وحفظ (AI)' : 'Apply & Save High Res (AI)'}
                             </Button>
+                            
+                            <div className="mt-3 p-2 bg-white/5 rounded text-[10px] text-white/50 text-center">
+                                {isAr ? 'التعديلات اليدوية تظهر فوراً (Live Preview)' : 'Manual adjustments update instantly'}
+                            </div>
                         </div>
                     </div>
                     <div className="lg:col-span-8 h-[600px]"><CompareView /></div>
@@ -503,6 +638,7 @@ The final image should look photographically perfect, extremely sharp yet natura
                                 <p>💎 {isAr ? 'جودة 8K Ultra-HD' : '8K Ultra-HD Quality'}</p>
                                 <p>👤 {isAr ? 'الحفاظ على الملامح بنسبة 1000%' : '1000% Face Preservation'}</p>
                                 <p>🚫 {isAr ? 'بدون تغيير في الخلفية أو الألوان' : 'No Background/Color Shift'}</p>
+                                <p>📏 {isAr ? 'الحفاظ على أبعاد الصورة الأصلية' : 'Preserve Original Aspect Ratio'}</p>
                             </div>
 
                             <Button onClick={handleProcessImage} isLoading={isLoading} className="w-full bg-gradient-to-r from-[#bf8339] to-[#d69545]">
@@ -525,6 +661,7 @@ The final image should look photographically perfect, extremely sharp yet natura
                     onCrop={handleCropConfirm}
                     onCancel={() => setCropImageSrc(null)}
                     isAr={isAr}
+                    aspectRatio={uploadTarget === 'reference' ? 1 : undefined} // Allow free cropping for features
                 />
             )}
         </div>
