@@ -62,15 +62,15 @@ const ImageBlenderView: React.FC = () => {
         }))
     })), [isAr]);
 
-    // Helper for ratio detection - Snaps to supported API ratios
+    // Helper for ratio detection - Snaps to supported API ratios and maps to new unique keys
     const getClosestAspectRatio = (width: number, height: number): string => {
         const ratio = width / height;
         const supported = [
             { r: 1, val: '1:1' },
             { r: 0.75, val: '3:4' },
-            { r: 1.333, val: '4:3' },
+            { r: 1.333, val: '4:3' }, // Maps to nothing specific in dropdown unless generic, but safe to keep logic
             { r: 0.5625, val: '9:16' },
-            { r: 1.777, val: '16:9' }
+            { r: 1.777, val: '16:9_YouTube' } // Map 16:9 to YouTube as default horizontal
         ];
         // Find closest
         let closest = supported[0];

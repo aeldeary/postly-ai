@@ -1,11 +1,13 @@
-
 import { GoogleGenAI, Type, Schema, Modality, GenerateContentResponse, GenerateContentParameters } from "@google/genai";
 import { 
   PostGeneration, ReelResponse, AdGeneration, 
   WebsiteGeneration, BrandKit, CreativeIdea, ChatMessage 
 } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Helper to get a fresh client instance. 
+// This ensures that if the API_KEY environment variable changes (or if we implement key switching),
+// we always use the current one.
+const getClient = () => new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 // Improved JSON Cleaner
 const cleanJson = (text: string): string => {
@@ -69,14 +71,14 @@ const retry = async <T>(fn: () => Promise<T>, retries = 3, delay = 2000): Promis
 
 // Helper to map custom aspect ratio keys to API supported values
 const getSafeAspectRatio = (ratio: string): string => {
+    // Check for standard ratios with suffixes (e.g., '16:9_YouTube')
+    if (ratio.startsWith('1:1')) return '1:1';
+    if (ratio.startsWith('16:9')) return '16:9';
+    if (ratio.startsWith('9:16')) return '9:16';
+    if (ratio.startsWith('3:4')) return '3:4';
+    if (ratio.startsWith('4:3')) return '4:3';
+
     switch (ratio) {
-        // Social Media & Standard
-        case '1:1': return '1:1';
-        case '16:9': return '16:9';
-        case '9:16': return '9:16';
-        case '3:4': return '3:4';
-        case '4:3': return '4:3';
-        
         // Print
         case 'A4_V': case 'A3_V': case 'A5_V': return '3:4'; // Portrait Paper roughly maps to 3:4
         case 'A4_H': case 'A3_H': case 'A5_H': return '4:3'; // Landscape Paper roughly maps to 4:3
@@ -84,7 +86,11 @@ const getSafeAspectRatio = (ratio: string): string => {
         
         // Banners
         case 'Rollup_S': case 'Rollup_M': case 'Rollup_L': return '9:16'; // Vertical Banners
-        case 'Banner_H': return '16:9'; // Horizontal Banners
+        case 'Banner_H': // Legacy support
+        case 'Banner_H_Wall': 
+        case 'Banner_H_Road': 
+        case 'Banner_H_Store': 
+            return '16:9'; // Horizontal Banners
         case 'Backdrop': return '4:3'; // Standard Backdrop
         
         default: return '1:1';
@@ -92,8 +98,15 @@ const getSafeAspectRatio = (ratio: string): string => {
 };
 
 // Wrappers
-const generateContent = (params: GenerateContentParameters): Promise<GenerateContentResponse> => retry(() => ai.models.generateContent(params));
-const generateVideosWrapper = (params: any) => retry(() => ai.models.generateVideos(params));
+const generateContent = (params: GenerateContentParameters): Promise<GenerateContentResponse> => {
+    const ai = getClient();
+    return retry(() => ai.models.generateContent(params));
+};
+
+const generateVideosWrapper = (params: any) => {
+    const ai = getClient();
+    return retry(() => ai.models.generateVideos(params));
+};
 
 export const generatePost = async (topic: string, dialect: string, language: string, industry: string, tone: string, useUserStyle: boolean): Promise<PostGeneration[]> => {
     const prompt = `Generate 4 variations of social media posts about "${topic}".
@@ -320,7 +333,9 @@ export const generateImage = async (
     visualSettings?: any
 ): Promise<string> => {
     const selectedModel = model || (isHD ? 'gemini-3-pro-image-preview' : 'gemini-2.5-flash-image');
-    let finalPrompt = prompt;
+    
+    // Explicit instruction to generate an image to prevent chatty responses
+    let finalPrompt = `Generate an image representing: ${prompt}`;
     
     // Map custom aspect ratio to API supported value
     const apiAspectRatio = getSafeAspectRatio(aspectRatio);
@@ -336,6 +351,9 @@ export const generateImage = async (
     }
     
     if (isHD) finalPrompt += " High Quality, 8k, Photorealistic, HDR, Sharp focus.";
+    
+    // Anti-chatter directive
+    finalPrompt += "\n\n(Output ONLY the generated image, no text description or preamble).";
 
     const parts: any[] = [{ text: finalPrompt }];
     if (referenceImages) {
@@ -366,7 +384,12 @@ export const generateImage = async (
         }
         
         const textPart = response.candidates?.[0]?.content?.parts?.find(p => p.text)?.text;
-        if (textPart) throw new Error(`Generation failed (Text returned): ${textPart}`);
+        
+        // If text is returned but no image, it often means the model refused or failed silently.
+        if (textPart) {
+             console.warn("Gemini returned text instead of image:", textPart);
+             throw new Error(`Generation failed. The model responded with text: "${textPart.substring(0, 60)}..." instead of an image. Please try again or simplify the prompt.`);
+        }
 
         throw new Error("No image generated.");
     } catch (e) { throw new Error(safeErrorHandler(e)); }
@@ -378,20 +401,28 @@ export const processImageEdit = async (
     prompt: string,
     aspectRatio: string = '1:1'
 ): Promise<string> => {
+    // Add instruction to force image output
+    const finalPrompt = `${prompt}\n\n(Generate an image. Output ONLY the generated image, no text description or preamble).`;
+
     // Uses the image editing capability (prompt + image)
-    const apiAspectRatio = getSafeAspectRatio(aspectRatio);
     const parts = [
         { inlineData: { data: imageData, mimeType: mimeType } },
-        { text: prompt }
+        { text: finalPrompt }
     ];
+
+    const requestConfig: any = {};
+        
+    // Only apply aspect ratio constraint if it's NOT 'original'
+    if (aspectRatio && aspectRatio !== 'original') {
+         const apiAspectRatio = getSafeAspectRatio(aspectRatio);
+         requestConfig.imageConfig = { aspectRatio: apiAspectRatio as any };
+    }
 
     try {
         const response = await generateContent({
             model: 'gemini-2.5-flash-image', // Best for editing
             contents: { parts },
-            config: {
-                imageConfig: { aspectRatio: apiAspectRatio as any }
-            }
+            config: requestConfig
         });
 
         for (const part of response.candidates?.[0]?.content?.parts || []) {
@@ -638,6 +669,7 @@ export const enhancePrompt = async (prompt: string, context: string): Promise<st
 };
 
 export const generateVideo = async (prompt: string, resolution: '720p' | '1080p', aspectRatio: '16:9' | '9:16', sourceImage?: {data: string, mimeType: string}): Promise<string> => {
+    const ai = getClient();
     try {
         const model = 'veo-3.1-fast-generate-preview';
         let operation;
@@ -654,8 +686,13 @@ export const generateVideo = async (prompt: string, resolution: '720p' | '1080p'
             operation = await ai.operations.getVideosOperation({operation: operation});
         }
 
+        if (operation.error) {
+            throw new Error(`Video generation error: ${operation.error.message}`);
+        }
+
         const videoUri = operation.response?.generatedVideos?.[0]?.video?.uri;
-        if (!videoUri) throw new Error("Video generation failed.");
+        if (!videoUri) throw new Error("Video generation failed: No video URI returned.");
+        
         const videoRes = await fetch(`${videoUri}&key=${process.env.API_KEY}`);
         const blob = await videoRes.blob();
         return URL.createObjectURL(blob);
@@ -668,12 +705,19 @@ export const generateSpeech = async (text: string, voice: string, language: stri
             model: "gemini-2.5-flash-preview-tts",
             contents: [{ parts: [{ text }] }],
             config: {
-                responseModalities: [Modality.AUDIO],
+                responseModalities: ['AUDIO'], // Changed from Modality.AUDIO to 'AUDIO'
                 speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: voice } } }
             }
         });
-        const audioData = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-        if (!audioData) throw new Error("No audio generated");
+        
+        const candidate = response.candidates?.[0];
+        if (candidate?.finishReason && candidate.finishReason !== 'STOP') {
+             if (candidate.finishReason === 'SAFETY') throw new Error(SAFETY_MESSAGE);
+             throw new Error(`Speech generation blocked: ${candidate.finishReason}`);
+        }
+
+        const audioData = candidate?.content?.parts?.[0]?.inlineData?.data;
+        if (!audioData) throw new Error("No audio generated. The model returned an empty response.");
         return audioData;
     } catch (e) { throw new Error(safeErrorHandler(e)); }
 };
@@ -693,7 +737,56 @@ export const optimizeTextForAudio = async (text: string, lang: string, dialect: 
     } catch (e) { return text; }
 };
 
+export const improveTextForAudio = async (text: string, lang: string, dialect: string, tone: string, isChild: boolean): Promise<string> => {
+    const prompt = `Improve and refine this text for natural speech synthesis (TTS).
+    Target Language: ${lang}
+    Dialect: ${dialect}
+    Tone: ${tone}
+    ${isChild ? "Style: Simple, clear, suitable for a child character." : ""}
+    
+    Make it sound natural, conversational, and polished. Output ONLY the improved text.
+    
+    Original Text: "${text}"`;
+    
+    try {
+        const response = await generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt
+        });
+        return response.text || text;
+    } catch (e) { return text; }
+};
+
+export const addTashkeel = async (text: string): Promise<string> => {
+    const prompt = `Add full, grammatically correct Arabic diacritics (Tashkeel) to the following text. 
+    Ensure high accuracy for TTS pronunciation. Output ONLY the vocalized text.
+    
+    Text: "${text}"`;
+    try {
+        const response = await generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt
+        });
+        return response.text || text;
+    } catch (e) { return text; }
+};
+
+export const translateText = async (text: string, targetLang: string): Promise<string> => {
+    const prompt = `Translate the following text to ${targetLang}. 
+    Ensure the translation is natural and suitable for speech. Output ONLY the translated text.
+    
+    Text: "${text}"`;
+    try {
+        const response = await generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt
+        });
+        return response.text || text;
+    } catch (e) { return text; }
+};
+
 export const sendChatMessage = async (history: ChatMessage[], message: string): Promise<string> => {
+    const ai = getClient();
     try {
         const chatHistory = history.slice(0, -1).map(h => ({ role: h.role, parts: [{ text: h.text }] }));
         const chat = ai.chats.create({ model: 'gemini-2.5-flash', history: chatHistory });
@@ -703,23 +796,24 @@ export const sendChatMessage = async (history: ChatMessage[], message: string): 
 };
 
 export const summarizeContent = async (text: string, file?: {data: string, mimeType: string}, language?: string, title?: string): Promise<string> => {
-    // Enhanced prompt for detailed summary
+    // Enhanced prompt for strict, source-based summary
     let prompt = `
-    Role: Professional Research Analyst and Editor.
-    Task: Create a **Comprehensive, Detailed, and Structured Summary** of the provided content/link.
-    
-    Strict Requirements:
-    1. **Detailed Analysis:** The summary must be extensive. Extract specific details, numbers, dates, quotes, and key arguments. Do NOT provide a short abstract.
-    2. **Structure:**
-       - **Executive Summary:** A high-level overview (1 paragraph).
-       - **Detailed Key Points:** A list of the most important takeaways.
-       - **In-Depth Analysis:** Divide the content into thematic sections with clear headings (##) and detailed explanation paragraphs.
-    3. **Tone:** Professional, engaging, and easy to read.
-    4. **Language:** Output strictly in ${language || 'English'}.
-    
+    Role: Precision Analyst & Content Extractor.
+    Task: Analyze the provided content/URL and generate a specific, factual summary based **EXCLUSIVELY** on the source material.
+
+    STRICT CONSTRAINTS (MUST FOLLOW):
+    1. **NO EXTERNAL INFO:** Do NOT add general knowledge, definitions, or background information that is not explicitly present in the source.
+    2. **NO FLUFF:** Avoid vague phrases like "This article discusses..." or "The video talks about important topics." State the specific points directly.
+    3. **URL HANDLING:** If a URL is provided, you MUST access and read its specific content. Do not guess based on the URL keywords. If you cannot access the page, state "Unable to access specific page content" rather than making up a summary.
+    4. **SPECIFICITY:** Capture names, numbers, dates, and specific arguments found in the source.
+    5. **Language:** Output strictly in ${language || 'Arabic'}.
+
     ${title ? `Context/Title: "${title}"` : ''}
-    
-    If a URL is provided, use your browsing capabilities (grounding) to retrieve specific details from it if possible. If you cannot access the URL directly, analyze the provided text or metadata deeply.
+
+    Output Format:
+    - **Core Thesis:** 1 sentence stating exactly what the source says.
+    - **Key Details:** Bullet points of specific facts/arguments extracted from the source.
+    - **Deep Dive:** A concise explanation of the main arguments found *in the source text*.
     `;
     
     const parts: any[] = [{ text: prompt }];

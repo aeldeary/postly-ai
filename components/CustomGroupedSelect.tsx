@@ -1,4 +1,5 @@
 
+
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 
@@ -211,6 +212,7 @@ const CustomGroupedSelect: React.FC<CustomGroupedSelectProps> = ({ label, value,
                             key={optIdx}
                             onClick={() => { onChange(optValue); setIsOpen(false); }}
                             className={`accordion-item ${value === optValue ? 'selected' : ''}`}
+                            title={optDesc} // Tooltip functionality
                           >
                             <div className="flex-1">
                                 <div className="font-medium">{optLabel as string}</div>

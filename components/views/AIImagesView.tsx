@@ -1,8 +1,7 @@
-
 import React, { useState, useContext, useMemo, useRef, useEffect } from 'react';
 import { ProjectContext } from '../../contexts/ProjectContext';
 import Button from '../Button';
-import { ImageIcon, SparklesIcon, BlenderIcon, TrashIcon, AdjustmentsIcon, ScaleIcon, RefreshIcon, ArrowsRightLeftIcon } from '../Icons';
+import { ImageIcon, SparklesIcon, BlenderIcon, TrashIcon, AdjustmentsIcon, ScaleIcon, RefreshIcon, ArrowsRightLeftIcon, MagicWandIcon, LightBulbIcon, Loader } from '../Icons';
 import * as geminiService from '../../services/geminiService';
 import { setItem, getItem } from '../../utils/localStorage';
 import { ARCHIVE_STORAGE_KEY, ASPECT_RATIOS_GROUPED, UNIFIED_IMAGE_STYLES, CAMERA_ANGLES, LIGHTING_STYLES, PRODUCT_SCENES_GROUPED, UI_TRANSLATIONS } from '../../constants';
@@ -29,6 +28,12 @@ const AIImagesView: React.FC = () => {
     const [productScene, setProductScene] = useState('');
     const [isHD, setIsHD] = useState(false);
     
+    // Prompt Tools State
+    const [isEnhancingPrompt, setIsEnhancingPrompt] = useState(false);
+    const [isGettingIdeas, setIsGettingIdeas] = useState(false);
+    const [suggestedPrompts, setSuggestedPrompts] = useState<string[]>([]);
+    const [expandedSuggestionIndex, setExpandedSuggestionIndex] = useState<number | null>(null);
+
     // New Feature States
     const [sourceImage, setSourceImage] = useState<string | null>(null);
     const [sourceMime, setSourceMime] = useState('image/jpeg');
@@ -97,24 +102,6 @@ const AIImagesView: React.FC = () => {
         options: g.options.map(o => ({ label: isAr ? o.label.ar : o.label.en, value: o.value }))
     })), [isAr]);
 
-    // --- HELPER: Detect Closest Aspect Ratio ---
-    const getClosestRatio = (width: number, height: number): string => {
-        const ratio = width / height;
-        const supported = [
-            { id: '1:1', val: 1 },
-            { id: '3:4', val: 0.75 },
-            { id: '4:3', val: 1.33 },
-            { id: '9:16', val: 0.56 },
-            { id: '16:9', val: 1.77 }
-        ];
-        
-        const closest = supported.reduce((prev, curr) => {
-            return (Math.abs(curr.val - ratio) < Math.abs(prev.val - ratio) ? curr : prev);
-        });
-        
-        return closest.id;
-    };
-
     // Handle Upload for Features (Color, Upscale, Restore)
     const handleFeatureUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -127,6 +114,58 @@ const AIImagesView: React.FC = () => {
         };
         reader.readAsDataURL(file);
         e.target.value = '';
+    };
+
+    // Helper for ratio detection - Snaps to supported API ratios and maps to new unique keys
+    const getClosestAspectRatio = (width: number, height: number): string => {
+        const ratio = width / height;
+        const supported = [
+            { r: 1, val: '1:1' },
+            { r: 0.75, val: '3:4' },
+            { r: 1.333, val: '4:3' }, 
+            { r: 0.5625, val: '9:16' },
+            { r: 1.777, val: '16:9_YouTube' } 
+        ];
+        // Find closest
+        let closest = supported[0];
+        let minDiff = Math.abs(ratio - closest.r);
+        for (let i = 1; i < supported.length; i++) {
+            const diff = Math.abs(ratio - supported[i].r);
+            if (diff < minDiff) {
+                minDiff = diff;
+                closest = supported[i];
+            }
+        }
+        return closest.val;
+    };
+
+    // --- PROMPT ENHANCEMENT HANDLERS ---
+    const handleEnhancePrompt = async () => {
+        if (!prompt.trim()) return alert(isAr ? 'اكتب وصفاً أولاً' : 'Enter prompt first');
+        setIsEnhancingPrompt(true);
+        try {
+            const enhanced = await geminiService.enhancePrompt(prompt, "High quality, photorealistic, extremely detailed image generation prompt.");
+            setPrompt(enhanced);
+            // We do NOT clear suggested prompts here, they are independent
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setIsEnhancingPrompt(false);
+        }
+    };
+
+    const handleGetIdeas = async () => {
+        if (!prompt.trim()) return alert(isAr ? 'اكتب وصفاً أولاً' : 'Enter prompt first');
+        setIsGettingIdeas(true);
+        try {
+            const variations = await geminiService.generateImagePromptVariations(prompt);
+            setSuggestedPrompts(variations);
+            setExpandedSuggestionIndex(null);
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setIsGettingIdeas(false);
+        }
     };
 
     // --- LIVE PREVIEW LOGIC (CANVAS) ---
@@ -233,10 +272,6 @@ const AIImagesView: React.FC = () => {
             const rawData = sourceImage.split(',')[1];
 
             if (activeSubTab === 'color') {
-                // For manual/filter adjustments, we can either save the canvas result directly (since it's live)
-                // OR send to AI for a high-quality render. 
-                // Since the user is adjusting sliders live, we can assume the resultImage is already what they want visually.
-                // However, for higher quality output, let's ask Gemini to match these params.
                 instructions = `Color Correction Mode. Apply the following adjustments exactly: Brightness: ${brightness > 0 ? '+' : ''}${brightness}%, Contrast: ${contrast > 0 ? '+' : ''}${contrast}%, Saturation: ${saturation > 0 ? '+' : ''}${saturation}%. Ensure the output maintains high resolution.`;
                 modelPrompt = instructions;
             }
@@ -386,13 +421,12 @@ The final image should look photographically perfect, extremely sharp yet natura
             // Feature Upload (Color/Upscale/Restore)
             const base64Data = croppedBase64.split(',')[1];
             
-            // Detect Aspect Ratio logic for restoration
+            // Calculate and set the closest aspect ratio to preserve image dimensions
             const img = new Image();
             img.src = croppedBase64;
             img.onload = () => {
-                const ratio = getClosestRatio(img.width, img.height);
-                setDetectedRatio(ratio);
-                setSourceImage(croppedBase64);
+                const r = getClosestAspectRatio(img.width, img.height);
+                setDetectedRatio(r); // Set the closest supported ratio
                 
                 // If we are in color mode, set result immediately to source so filters apply live on it
                 if (activeSubTab === 'color') {
@@ -401,6 +435,8 @@ The final image should look photographically perfect, extremely sharp yet natura
                     setResultImage(null); // Reset result for other modes until processed
                 }
             };
+            
+            setSourceImage(croppedBase64);
         }
         setCropImageSrc(null);
     };
@@ -451,9 +487,69 @@ The final image should look photographically perfect, extremely sharp yet natura
                             <textarea 
                                 value={prompt}
                                 onChange={e => setPrompt(e.target.value)}
-                                className="w-full bg-black/20 border border-white/10 rounded-lg p-3 text-white focus:border-[#bf8339] h-24 text-sm mb-4 placeholder-white/30"
+                                className="w-full bg-black/20 border border-white/10 rounded-lg p-3 text-white focus:border-[#bf8339] h-24 text-sm mb-2 placeholder-white/30"
                                 placeholder={isAr ? "صف الصورة التي تريد إنشاءها..." : "Describe the image you want to create..."}
                             />
+                            
+                            {/* AI Prompt Tools */}
+                            <div className="flex gap-2 mb-4">
+                                <button 
+                                    onClick={handleEnhancePrompt} 
+                                    disabled={isEnhancingPrompt}
+                                    className="flex items-center gap-1 text-[10px] bg-white/5 hover:bg-[#bf8339]/20 hover:text-[#bf8339] text-white/70 px-2 py-1.5 rounded transition border border-white/5"
+                                >
+                                    {isEnhancingPrompt ? <Loader /> : <MagicWandIcon className="w-3 h-3" />}
+                                    {isAr ? 'تحسين الوصف' : 'Enhance Prompt'}
+                                </button>
+                                <button 
+                                    onClick={handleGetIdeas} 
+                                    disabled={isGettingIdeas}
+                                    className="flex items-center gap-1 text-[10px] bg-white/5 hover:bg-[#bf8339]/20 hover:text-[#bf8339] text-white/70 px-2 py-1.5 rounded transition border border-white/5"
+                                >
+                                    {isGettingIdeas ? <Loader /> : <LightBulbIcon className="w-3 h-3" />}
+                                    {isAr ? 'أفكار مشابهة' : 'Similar Ideas'}
+                                </button>
+                            </div>
+
+                            {/* Suggestions Display (Expandable List) */}
+                            {suggestedPrompts.length > 0 && (
+                                <div className="mb-4 bg-black/20 p-3 rounded-lg border border-white/5 animate-fade-in">
+                                    <div className="flex justify-between items-center mb-2 px-1">
+                                        <p className="text-[10px] text-white/40">{isAr ? 'اختر فكرة لتطبيقها:' : 'Choose an idea to apply:'}</p>
+                                        <button onClick={() => setSuggestedPrompts([])} className="text-[10px] text-white/30 hover:text-white transition">✕</button>
+                                    </div>
+                                    <div className="space-y-2">
+                                        {suggestedPrompts.map((p, i) => (
+                                            <div 
+                                                key={i}
+                                                className="flex flex-col bg-white/5 rounded-lg border border-white/5 hover:border-[#bf8339]/30 transition group overflow-hidden"
+                                            >
+                                                <div className="flex items-stretch">
+                                                    <button 
+                                                        onClick={() => { setPrompt(p); }}
+                                                        className="flex-1 text-left text-xs text-white/80 p-3 leading-relaxed hover:bg-white/5 transition-colors"
+                                                    >
+                                                        <span className={expandedSuggestionIndex === i ? "" : "line-clamp-2"}>{p}</span>
+                                                    </button>
+                                                    
+                                                    <button 
+                                                        onClick={(e) => { e.stopPropagation(); setExpandedSuggestionIndex(expandedSuggestionIndex === i ? null : i); }}
+                                                        className="px-3 bg-white/5 hover:bg-white/10 border-l border-white/5 text-white/40 hover:text-[#bf8339] transition-colors flex items-center justify-center"
+                                                        title={isAr ? 'عرض المزيد' : 'Expand'}
+                                                    >
+                                                        {expandedSuggestionIndex === i ? (
+                                                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" /></svg>
+                                                        ) : (
+                                                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                                                        )}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="space-y-4 mb-4">
                                 <CustomGroupedSelect label={isAr ? "الأبعاد" : "Aspect Ratio"} value={aspectRatio} onChange={setAspectRatio} groups={aspectRatioGroups} placeholder="Select Ratio" />
                                 <CustomGroupedSelect label={isAr ? "النمط" : "Style"} value={style} onChange={setStyle} groups={styleGroups} placeholder="Select Style" />

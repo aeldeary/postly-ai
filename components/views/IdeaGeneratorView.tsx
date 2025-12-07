@@ -1,8 +1,9 @@
 
+
 import React, { useState, useContext, useMemo, useEffect } from 'react';
 import { ProjectContext } from '../../contexts/ProjectContext';
 import Button from '../Button';
-import { Loader, LightBulbIcon, MagicWandIcon, CreatePostIcon, ImageIcon, SparklesIcon } from '../Icons';
+import { Loader, LightBulbIcon, MagicWandIcon, CreatePostIcon, ImageIcon, SparklesIcon, InfoIcon } from '../Icons';
 import { INDUSTRIES_GROUPED, LANGUAGES_GROUPED, ARABIC_DIALECTS_GROUPED, IDEA_TYPES, ARCHIVE_STORAGE_KEY } from '../../constants';
 import * as geminiService from '../../services/geminiService';
 import { setItem, getItem } from '../../utils/localStorage';
@@ -18,6 +19,7 @@ const IdeaGeneratorView: React.FC = () => {
     const [localTopic, setLocalTopic] = useState(topic);
     const [targetAudience, setTargetAudience] = useState('');
     const [ideaType, setIdeaType] = useState(IDEA_TYPES[0].options[0].value);
+    const [showTypesModal, setShowTypesModal] = useState(false);
     
     const [ideas, setIdeas] = useState<CreativeIdea[]>([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -43,7 +45,11 @@ const IdeaGeneratorView: React.FC = () => {
 
     const localizedIdeaTypes = useMemo(() => IDEA_TYPES.map(g => ({
         label: isAr ? g.label.ar : g.label.en,
-        options: g.options.map(o => ({ label: isAr ? o.label.ar : o.label.en, value: o.value }))
+        options: g.options.map(o => ({ 
+            label: isAr ? o.label.ar : o.label.en, 
+            value: o.value,
+            description: isAr ? o.description?.ar : o.description?.en
+        }))
     })), [isAr]);
 
     // Memoized localized options
@@ -179,13 +185,25 @@ const IdeaGeneratorView: React.FC = () => {
                         groups={localizedIndustries}
                         placeholder={isAr ? "اختر القطاع" : "Select Industry"}
                     />
-                    <CustomGroupedSelect 
-                        label={isAr ? "نوع الأفكار المطلوبة" : "Idea Type"}
-                        value={ideaType}
-                        onChange={setIdeaType}
-                        groups={localizedIdeaTypes}
-                        placeholder={isAr ? "اختر النوع" : "Select Type"}
-                    />
+                    <div>
+                        <div className="flex justify-between items-center mb-1">
+                            <label className="block text-sm text-white/80">{isAr ? "نوع الأفكار المطلوبة" : "Idea Type"}</label>
+                            <button 
+                                onClick={() => setShowTypesModal(true)} 
+                                className="text-[10px] text-[#bf8339] hover:underline flex items-center gap-1"
+                            >
+                                <InfoIcon className="w-3 h-3" />
+                                {isAr ? 'شرح الأنواع' : 'Explain Types'}
+                            </button>
+                        </div>
+                        <CustomGroupedSelect 
+                            label=""
+                            value={ideaType}
+                            onChange={setIdeaType}
+                            groups={localizedIdeaTypes}
+                            placeholder={isAr ? "اختر النوع" : "Select Type"}
+                        />
+                    </div>
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
@@ -356,6 +374,33 @@ const IdeaGeneratorView: React.FC = () => {
                             </div>
                         </div>
                     );})}
+                </div>
+            )}
+
+            {/* Explain Types Modal */}
+            {showTypesModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in" onClick={() => setShowTypesModal(false)}>
+                    <div className="bg-[#0a1e3c] border border-white/10 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+                        <div className="bg-[#bf8339] p-4 flex justify-between items-center text-[#0a1e3c]">
+                            <h3 className="font-bold text-lg flex items-center gap-2">
+                                <InfoIcon className="w-5 h-5" />
+                                {isAr ? 'أنواع الأفكار الإبداعية' : 'Creative Idea Types'}
+                            </h3>
+                            <button onClick={() => setShowTypesModal(false)} className="hover:bg-white/20 rounded-full p-1 transition">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div className="p-4 overflow-y-auto max-h-[70vh] custom-scrollbar space-y-3">
+                            {localizedIdeaTypes[0].options.map((opt, i) => (
+                                <div key={i} className="bg-white/5 border border-white/5 rounded-xl p-3 hover:border-[#bf8339]/30 transition">
+                                    <h4 className="font-bold text-[#bf8339] text-base mb-1">{opt.label}</h4>
+                                    <p className="text-white/80 text-sm leading-relaxed">{opt.description}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

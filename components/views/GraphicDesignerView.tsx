@@ -3,7 +3,7 @@ import React, { useState, useContext, useRef, useEffect, useMemo } from 'react';
 import { ProjectContext } from '../../contexts/ProjectContext';
 import Button from '../Button';
 import { PaintBrushIcon, Loader, TrashIcon, AlignRightIcon, AlignCenterIcon, AlignLeftIcon, AlignJustifyIcon, AdjustmentsHorizontalIcon, SwatchIcon, ArrowsRightLeftIcon } from '../Icons';
-import { GRAPHIC_DESIGN_STYLES, GRAPHIC_DESIGN_SIZES, MOCKUP_TYPES_GROUPED, LANGUAGES_GROUPED, ARCHIVE_STORAGE_KEY } from '../../constants';
+import { GRAPHIC_DESIGN_STYLES, ASPECT_RATIOS_GROUPED, MOCKUP_TYPES_GROUPED, LANGUAGES_GROUPED, ARCHIVE_STORAGE_KEY } from '../../constants';
 import * as geminiService from '../../services/geminiService';
 import CustomGroupedSelect from '../CustomGroupedSelect';
 import { setItem, getItem, removeItem } from '../../utils/localStorage';
@@ -213,8 +213,8 @@ const GraphicDesignerView: React.FC = () => {
         }))
     })), [isAr]);
 
-    // Prepare sizes based on language
-    const sizeGroups = useMemo(() => GRAPHIC_DESIGN_SIZES.map(g => ({
+    // Prepare sizes based on language - USING ASPECT_RATIOS_GROUPED directly for consistency
+    const sizeGroups = useMemo(() => ASPECT_RATIOS_GROUPED.map(g => ({
         label: isAr ? g.label.ar : g.label.en,
         options: g.options.map(o => ({
             label: isAr ? o.label.ar : o.label.en,
@@ -659,9 +659,9 @@ const GraphicDesignerView: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          <div className="lg:col-span-4 flex flex-col gap-6 h-[calc(100dvh-140px)]">
-               {/* 1. Design Settings (Fixed at Top, Non-Scrollable) */}
-               <div className="bg-[#0a1e3c]/60 backdrop-blur border border-white/10 rounded-xl p-4 shrink-0 shadow-lg z-10">
+          <div className="lg:col-span-4 space-y-6">
+               {/* 1. Design Settings */}
+               <div className="bg-[#0a1e3c]/60 backdrop-blur border border-white/10 rounded-xl p-4 shadow-lg">
                    <h3 className="text-[#bf8339] font-bold mb-4 text-sm border-b border-white/10 pb-2">{isAr ? '1. إعدادات التصميم (أساسي)' : '1. Design Settings (Basic)'}</h3>
                    <div className="space-y-4">
                        <CustomGroupedSelect label={isAr ? "لغة التصميم" : "Design Language"} value={posterLang} onChange={setPosterLang} groups={langGroups} placeholder="Select Language" />
@@ -687,148 +687,145 @@ const GraphicDesignerView: React.FC = () => {
                    </div>
                </div>
 
-                {/* Remaining Sections (Scrollable) */}
-                <div className="overflow-y-auto custom-scrollbar flex-1 space-y-6 pr-2">
-                    {/* 2. References */}
-                    <div className="bg-[#0a1e3c]/60 backdrop-blur border border-white/10 rounded-xl p-4">
-                        <div className="flex justify-between items-center mb-4 border-b border-white/10 pb-2">
-                             <h3 className="text-[#bf8339] font-bold text-sm">{isAr ? '2. صور مرجعية (Style References)' : '2. Style References'}</h3>
-                             <span className="text-[10px] text-white/50">{referenceImages.length}/10</span>
+                {/* 2. References */}
+                <div className="bg-[#0a1e3c]/60 backdrop-blur border border-white/10 rounded-xl p-4">
+                    <div className="flex justify-between items-center mb-4 border-b border-white/10 pb-2">
+                            <h3 className="text-[#bf8339] font-bold text-sm">{isAr ? '2. صور مرجعية (Style References)' : '2. Style References'}</h3>
+                            <span className="text-[10px] text-white/50">{referenceImages.length}/10</span>
+                    </div>
+                    <div className="grid grid-cols-4 gap-2">
+                        {referenceImages.map((ref) => (
+                            <div key={ref.id} className="relative group aspect-square">
+                                <img src={`data:${ref.mimeType};base64,${ref.data}`} className="w-full h-full object-cover rounded border border-white/10" />
+                                <button 
+                                    onClick={() => removeReferenceImage(ref.id)} 
+                                    className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition shadow-md z-10"
+                                    title={isAr ? "حذف" : "Remove"}
+                                >
+                                    <TrashIcon className="w-3 h-3 text-white" />
+                                </button>
+                            </div>
+                        ))}
+                        {referenceImages.length < 10 && (
+                            <div onClick={() => referenceFileRef.current?.click()} className="aspect-square border-2 border-dashed border-white/20 rounded flex items-center justify-center cursor-pointer hover:bg-white/5 hover:border-[#bf8339] text-xl text-white/30 hover:text-[#bf8339] transition">
+                                +
+                            </div>
+                        )}
+                    </div>
+                    <input type="file" ref={referenceFileRef} onChange={handleReferenceUpload} className="hidden" accept="image/*" />
+                </div>
+
+                {/* 3. Brand Colors */}
+                <div className="bg-[#0a1e3c]/60 backdrop-blur border border-white/10 rounded-xl p-4">
+                    <h3 className="text-[#bf8339] font-bold mb-4 text-sm border-b border-white/10 pb-2">{isAr ? '3. ألوان الهوية' : '3. Brand Colors'}</h3>
+                    <AdvancedColorPicker 
+                        label={isAr ? "لوحة الألوان الأساسية" : "Primary Palette"} 
+                        onColorChange={setPaletteColors} 
+                        defaultColors={paletteColors} 
+                        isAr={isAr}
+                    />
+                </div>
+
+                {/* 4. Background & Gradients */}
+                <div className="bg-[#0a1e3c]/60 backdrop-blur border border-white/10 rounded-xl p-4">
+                    <h3 className="text-[#bf8339] font-bold mb-4 text-sm border-b border-white/10 pb-2">{isAr ? '4. الخلفية والتدرجات (Background)' : '4. Background & Gradients'}</h3>
+                    
+                    <div className="space-y-4">
+                        {/* Solid Color */}
+                        <div className="flex justify-between items-center bg-white/5 p-2 rounded-lg">
+                            <label className="text-xs flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" checked={showBgColor} onChange={e => { setShowBgColor(e.target.checked); if(e.target.checked) setShowGradient(false); }} className="accent-[#bf8339]"/> 
+                                {isAr ? 'لون خلفية موحد' : 'Solid Background'}
+                            </label>
+                            {showBgColor && <input type="color" value={bgColor} onChange={e => setBgColor(e.target.value)} className="w-8 h-8 rounded cursor-pointer bg-transparent" />}
                         </div>
-                        <div className="grid grid-cols-4 gap-2">
-                            {referenceImages.map((ref) => (
-                                <div key={ref.id} className="relative group aspect-square">
-                                    <img src={`data:${ref.mimeType};base64,${ref.data}`} className="w-full h-full object-cover rounded border border-white/10" />
-                                    <button 
-                                        onClick={() => removeReferenceImage(ref.id)} 
-                                        className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition shadow-md z-10"
-                                        title={isAr ? "حذف" : "Remove"}
-                                    >
-                                        <TrashIcon className="w-3 h-3 text-white" />
-                                    </button>
-                                </div>
-                            ))}
-                            {referenceImages.length < 10 && (
-                                <div onClick={() => referenceFileRef.current?.click()} className="aspect-square border-2 border-dashed border-white/20 rounded flex items-center justify-center cursor-pointer hover:bg-white/5 hover:border-[#bf8339] text-xl text-white/30 hover:text-[#bf8339] transition">
-                                    +
+
+                        {/* Gradient Section */}
+                        <div className={`p-3 rounded-lg border transition-all ${showGradient ? 'bg-white/5 border-[#bf8339]/50' : 'bg-transparent border-white/5'}`}>
+                            <label className="text-xs flex items-center gap-2 cursor-pointer mb-2">
+                                <input type="checkbox" checked={showGradient} onChange={e => { setShowGradient(e.target.checked); if(e.target.checked) setShowBgColor(false); }} className="accent-[#bf8339]"/> 
+                                <span className={showGradient ? 'text-[#bf8339] font-bold' : ''}>{isAr ? 'تدرج لوني (Gradient)' : 'Gradient Background'}</span>
+                            </label>
+
+                            {showGradient && (
+                                <div className="animate-fade-in space-y-3 pl-4 border-l-2 border-[#bf8339]/20 mt-2">
+                                    
+                                    {/* Gradient Presets List */}
+                                    <div className="mb-3">
+                                        <p className="text-[10px] text-white/50 mb-1.5">{isAr ? 'قوالب جاهزة' : 'Presets'}</p>
+                                        <div className="grid grid-cols-5 gap-1.5">
+                                            {PRESET_GRADIENTS.map((g, i) => (
+                                                <button 
+                                                    key={i}
+                                                    onClick={() => {
+                                                        setGradientType(g.colors.length === 3 ? '3' : '2');
+                                                        setGradientColors(g.colors);
+                                                    }}
+                                                    className="h-6 rounded border border-white/10 hover:scale-110 transition-transform shadow-sm relative group"
+                                                    style={{ background: `linear-gradient(to right, ${g.colors.join(', ')})` }}
+                                                    title={g.name}
+                                                >
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Gradient Type */}
+                                    <div className="flex gap-2 text-[10px]">
+                                        <button onClick={() => toggleGradientType('2')} className={`flex-1 py-1 rounded border ${gradientType === '2' ? 'bg-[#bf8339] text-[#0a1e3c] border-[#bf8339]' : 'text-white/60 border-white/20'}`}>{isAr ? 'لونين' : '2 Colors'}</button>
+                                        <button onClick={() => toggleGradientType('3')} className={`flex-1 py-1 rounded border ${gradientType === '3' ? 'bg-[#bf8339] text-[#0a1e3c] border-[#bf8339]' : 'text-white/60 border-white/20'}`}>{isAr ? '3 ألوان' : '3 Colors'}</button>
+                                    </div>
+
+                                    {/* Color Stops */}
+                                    <div className="flex gap-2 justify-between">
+                                        {gradientColors.map((col, idx) => (
+                                            <div key={idx} className="flex flex-col items-center gap-1">
+                                                <div className="relative w-8 h-8 rounded-full overflow-hidden border border-white/20 shadow-sm hover:border-[#bf8339] transition-colors">
+                                                    <input 
+                                                        type="color" 
+                                                        value={col} 
+                                                        onChange={e => updateGradientStop(idx, e.target.value)} 
+                                                        className="absolute inset-0 w-[150%] h-[150%] -top-[25%] -left-[25%] p-0 cursor-pointer" 
+                                                    />
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    {/* Preview & Randomize */}
+                                    <div className="space-y-2">
+                                        <div 
+                                            className="h-6 w-full rounded-md border border-white/10 shadow-inner" 
+                                            style={{ background: `linear-gradient(to right, ${gradientColors.join(', ')})` }}
+                                            title="Gradient Preview"
+                                        ></div>
+                                        <button onClick={randomizeGradient} className="text-[10px] w-full py-1 bg-white/5 hover:bg-white/10 text-white/70 rounded flex items-center justify-center gap-1">
+                                            <ArrowsRightLeftIcon className="w-3 h-3" /> {isAr ? 'عشوائي' : 'Randomize'}
+                                        </button>
+                                    </div>
                                 </div>
                             )}
                         </div>
-                        <input type="file" ref={referenceFileRef} onChange={handleReferenceUpload} className="hidden" accept="image/*" />
                     </div>
+                </div>
 
-                   {/* 3. Brand Colors */}
-                   <div className="bg-[#0a1e3c]/60 backdrop-blur border border-white/10 rounded-xl p-4">
-                       <h3 className="text-[#bf8339] font-bold mb-4 text-sm border-b border-white/10 pb-2">{isAr ? '3. ألوان الهوية' : '3. Brand Colors'}</h3>
-                       <AdvancedColorPicker 
-                           label={isAr ? "لوحة الألوان الأساسية" : "Primary Palette"} 
-                           onColorChange={setPaletteColors} 
-                           defaultColors={paletteColors} 
-                           isAr={isAr}
-                       />
-                   </div>
-
-                   {/* 4. Background & Gradients */}
-                   <div className="bg-[#0a1e3c]/60 backdrop-blur border border-white/10 rounded-xl p-4">
-                       <h3 className="text-[#bf8339] font-bold mb-4 text-sm border-b border-white/10 pb-2">{isAr ? '4. الخلفية والتدرجات (Background)' : '4. Background & Gradients'}</h3>
-                       
-                       <div className="space-y-4">
-                           {/* Solid Color */}
-                           <div className="flex justify-between items-center bg-white/5 p-2 rounded-lg">
-                               <label className="text-xs flex items-center gap-2 cursor-pointer">
-                                   <input type="checkbox" checked={showBgColor} onChange={e => { setShowBgColor(e.target.checked); if(e.target.checked) setShowGradient(false); }} className="accent-[#bf8339]"/> 
-                                   {isAr ? 'لون خلفية موحد' : 'Solid Background'}
-                               </label>
-                               {showBgColor && <input type="color" value={bgColor} onChange={e => setBgColor(e.target.value)} className="w-8 h-8 rounded cursor-pointer bg-transparent" />}
-                           </div>
-
-                           {/* Gradient Section */}
-                           <div className={`p-3 rounded-lg border transition-all ${showGradient ? 'bg-white/5 border-[#bf8339]/50' : 'bg-transparent border-white/5'}`}>
-                               <label className="text-xs flex items-center gap-2 cursor-pointer mb-2">
-                                   <input type="checkbox" checked={showGradient} onChange={e => { setShowGradient(e.target.checked); if(e.target.checked) setShowBgColor(false); }} className="accent-[#bf8339]"/> 
-                                   <span className={showGradient ? 'text-[#bf8339] font-bold' : ''}>{isAr ? 'تدرج لوني (Gradient)' : 'Gradient Background'}</span>
-                               </label>
-
-                               {showGradient && (
-                                   <div className="animate-fade-in space-y-3 pl-4 border-l-2 border-[#bf8339]/20 mt-2">
-                                       
-                                       {/* Gradient Presets List */}
-                                       <div className="mb-3">
-                                           <p className="text-[10px] text-white/50 mb-1.5">{isAr ? 'قوالب جاهزة' : 'Presets'}</p>
-                                           <div className="grid grid-cols-5 gap-1.5">
-                                               {PRESET_GRADIENTS.map((g, i) => (
-                                                   <button 
-                                                       key={i}
-                                                       onClick={() => {
-                                                           setGradientType(g.colors.length === 3 ? '3' : '2');
-                                                           setGradientColors(g.colors);
-                                                       }}
-                                                       className="h-6 rounded border border-white/10 hover:scale-110 transition-transform shadow-sm relative group"
-                                                       style={{ background: `linear-gradient(to right, ${g.colors.join(', ')})` }}
-                                                       title={g.name}
-                                                   >
-                                                   </button>
-                                               ))}
-                                           </div>
-                                       </div>
-
-                                       {/* Gradient Type */}
-                                       <div className="flex gap-2 text-[10px]">
-                                           <button onClick={() => toggleGradientType('2')} className={`flex-1 py-1 rounded border ${gradientType === '2' ? 'bg-[#bf8339] text-[#0a1e3c] border-[#bf8339]' : 'text-white/60 border-white/20'}`}>{isAr ? 'لونين' : '2 Colors'}</button>
-                                           <button onClick={() => toggleGradientType('3')} className={`flex-1 py-1 rounded border ${gradientType === '3' ? 'bg-[#bf8339] text-[#0a1e3c] border-[#bf8339]' : 'text-white/60 border-white/20'}`}>{isAr ? '3 ألوان' : '3 Colors'}</button>
-                                       </div>
-
-                                       {/* Color Stops */}
-                                       <div className="flex gap-2 justify-between">
-                                           {gradientColors.map((col, idx) => (
-                                               <div key={idx} className="flex flex-col items-center gap-1">
-                                                   <div className="relative w-8 h-8 rounded-full overflow-hidden border border-white/20 shadow-sm hover:border-[#bf8339] transition-colors">
-                                                       <input 
-                                                           type="color" 
-                                                           value={col} 
-                                                           onChange={e => updateGradientStop(idx, e.target.value)} 
-                                                           className="absolute inset-0 w-[150%] h-[150%] -top-[25%] -left-[25%] p-0 cursor-pointer" 
-                                                       />
-                                                   </div>
-                                               </div>
-                                           ))}
-                                       </div>
-
-                                       {/* Preview & Randomize */}
-                                       <div className="space-y-2">
-                                           <div 
-                                               className="h-6 w-full rounded-md border border-white/10 shadow-inner" 
-                                               style={{ background: `linear-gradient(to right, ${gradientColors.join(', ')})` }}
-                                               title="Gradient Preview"
-                                           ></div>
-                                           <button onClick={randomizeGradient} className="text-[10px] w-full py-1 bg-white/5 hover:bg-white/10 text-white/70 rounded flex items-center justify-center gap-1">
-                                               <ArrowsRightLeftIcon className="w-3 h-3" /> {isAr ? 'عشوائي' : 'Randomize'}
-                                           </button>
-                                       </div>
-                                   </div>
-                               )}
-                           </div>
-                       </div>
-                   </div>
-
-                   {/* 5. Element Colors */}
-                   <div className="bg-[#0a1e3c]/60 backdrop-blur border border-white/10 rounded-xl p-4">
-                       <h3 className="text-[#bf8339] font-bold mb-4 text-sm border-b border-white/10 pb-2">{isAr ? '5. ألوان العناصر' : '5. Element Colors'}</h3>
-                       <div className="space-y-3">
-                           <div className="flex justify-between items-center">
-                               <label className="text-xs flex items-center gap-2"><input type="checkbox" checked={showTextColor} onChange={e => setShowTextColor(e.target.checked)} className="accent-[#bf8339]"/> {isAr ? 'لون النصوص' : 'Text Color'}</label>
-                               {showTextColor && <input type="color" value={textColor} onChange={e => setTextColor(e.target.value)} />}
-                           </div>
-                           <div className="flex justify-between items-center">
-                               <label className="text-xs flex items-center gap-2"><input type="checkbox" checked={showIconColor} onChange={e => setShowIconColor(e.target.checked)} className="accent-[#bf8339]"/> {isAr ? 'لون الأيقونات' : 'Icon Color'}</label>
-                               {showIconColor && <input type="color" value={iconColor} onChange={e => setIconColor(e.target.value)} />}
-                           </div>
-                           <div className="flex justify-between items-center">
-                               <label className="text-xs flex items-center gap-2"><input type="checkbox" checked={showLabelColor} onChange={e => setShowLabelColor(e.target.checked)} className="accent-[#bf8339]"/> {isAr ? 'لون الليبلز' : 'Label Color'}</label>
-                               {showLabelColor && <input type="color" value={labelColor} onChange={e => setLabelColor(e.target.value)} />}
-                           </div>
-                       </div>
-                   </div>
+                {/* 5. Element Colors */}
+                <div className="bg-[#0a1e3c]/60 backdrop-blur border border-white/10 rounded-xl p-4">
+                    <h3 className="text-[#bf8339] font-bold mb-4 text-sm border-b border-white/10 pb-2">{isAr ? '5. ألوان العناصر' : '5. Element Colors'}</h3>
+                    <div className="space-y-3">
+                        <div className="flex justify-between items-center">
+                            <label className="text-xs flex items-center gap-2"><input type="checkbox" checked={showTextColor} onChange={e => setShowTextColor(e.target.checked)} className="accent-[#bf8339]"/> {isAr ? 'لون النصوص' : 'Text Color'}</label>
+                            {showTextColor && <input type="color" value={textColor} onChange={e => setTextColor(e.target.value)} />}
+                        </div>
+                        <div className="flex justify-between items-center">
+                            <label className="text-xs flex items-center gap-2"><input type="checkbox" checked={showIconColor} onChange={e => setShowIconColor(e.target.checked)} className="accent-[#bf8339]"/> {isAr ? 'لون الأيقونات' : 'Icon Color'}</label>
+                            {showIconColor && <input type="color" value={iconColor} onChange={e => setIconColor(e.target.value)} />}
+                        </div>
+                        <div className="flex justify-between items-center">
+                            <label className="text-xs flex items-center gap-2"><input type="checkbox" checked={showLabelColor} onChange={e => setShowLabelColor(e.target.checked)} className="accent-[#bf8339]"/> {isAr ? 'لون الليبلز' : 'Label Color'}</label>
+                            {showLabelColor && <input type="color" value={labelColor} onChange={e => setLabelColor(e.target.value)} />}
+                        </div>
+                    </div>
                 </div>
           </div>
 

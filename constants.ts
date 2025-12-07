@@ -1,4 +1,5 @@
 
+
 export const ARCHIVE_STORAGE_KEY = 'postly_archive_v1';
 
 export const UI_TRANSLATIONS = {
@@ -39,7 +40,6 @@ export const UI_TRANSLATIONS = {
 };
 
 export const LANGUAGES_GROUPED = [
-// ... existing constants ...
   {
     label: { ar: 'اللغات الأكثر استخدامًا', en: 'Most Used Languages' },
     options: [
@@ -53,7 +53,6 @@ export const LANGUAGES_GROUPED = [
       { label: { ar: 'الروسية', en: 'Russian' }, value: 'Russian' },
     ]
   },
-// ... remaining existing constants ...
   {
     label: { ar: 'لغات آسيا', en: 'Asian Languages' },
     options: [
@@ -130,7 +129,6 @@ export const LANGUAGES_GROUPED = [
 ];
 
 export const ARABIC_DIALECTS_GROUPED = [
-// ... existing code ...
   {
     label: { ar: '🇪🇬 مصر', en: 'Egypt 🇪🇬' },
     options: [
@@ -269,7 +267,6 @@ export const ARABIC_DIALECTS_GROUPED = [
 ];
 
 export const INDUSTRIES_GROUPED = [
-// ... existing code ...
   {
     label: { ar: '🏢 القطاعات التجارية', en: 'Business & Retail 🏢' },
     options: [
@@ -502,7 +499,6 @@ export const INDUSTRIES_GROUPED = [
 ];
 
 export const TONES_GROUPED = [
-// ... existing code ...
   {
     label: { ar: '🎯 النبرات العامة', en: '🎯 General Tones' },
     options: [
@@ -637,7 +633,6 @@ export const AD_PLATFORMS = [
 ];
 
 export const REEL_MODES = [
-// ... existing code ...
     {
         label: { ar: 'الأنماط', en: 'Styles' },
         options: [
@@ -664,17 +659,16 @@ export const REEL_DURATIONS = [
 ];
 
 export const ASPECT_RATIOS_GROUPED = [
-// ... existing code ...
   {
     label: { ar: '📱 سوشيال ميديا', en: '📱 Social Media' },
     options: [
       { label: { ar: 'منشور مربع (1080x1080)', en: 'Square Post (1080x1080)' }, value: '1:1', description: 'Instagram / Facebook' },
       { label: { ar: 'منشور طولي (1080x1440)', en: 'Portrait Post (1080x1440)' }, value: '3:4', description: 'Instagram / Facebook' },
-      { label: { ar: 'منشور أفقي (1080x566)', en: 'Landscape Post (1080x566)' }, value: '16:9', description: 'Twitter / Web' },
+      { label: { ar: 'منشور أفقي (1080x566)', en: 'Landscape Post (1080x566)' }, value: '16:9_Twitter', description: 'Twitter / Web' },
       { label: { ar: 'ستوري / ريلز (1080x1920)', en: 'Story / Reels (1080x1920)' }, value: '9:16', description: 'TikTok / IG / Snapchat' },
-      { label: { ar: 'يوتيوب / فيديو عرضي (1920x1080)', en: 'YouTube / Landscape (1920x1080)' }, value: '16:9', description: 'Full HD Video' },
-      { label: { ar: 'صورة مصغّرة (1280x720)', en: 'Thumbnail (1280x720)' }, value: '16:9', description: 'YouTube' },
-      { label: { ar: 'غلاف صفحة (2560x1440)', en: 'Page Cover (2560x1440)' }, value: '16:9', description: 'Channel Art / Banner' },
+      { label: { ar: 'يوتيوب / فيديو عرضي (1920x1080)', en: 'YouTube / Landscape (1920x1080)' }, value: '16:9_YouTube', description: 'Full HD Video' },
+      { label: { ar: 'صورة مصغّرة (1280x720)', en: 'Thumbnail (1280x720)' }, value: '16:9_Thumbnail', description: 'YouTube' },
+      { label: { ar: 'غلاف صفحة (2560x1440)', en: 'Page Cover (2560x1440)' }, value: '16:9_Cover', description: 'Channel Art / Banner' },
     ]
   },
   {
@@ -695,30 +689,100 @@ export const ASPECT_RATIOS_GROUPED = [
       { label: { ar: 'رول أب صغير (80x200cm)', en: 'Rollup Small (80x200)' }, value: 'Rollup_S', description: 'Vertical Stand' },
       { label: { ar: 'رول أب متوسط (85x200cm)', en: 'Rollup Medium (85x200)' }, value: 'Rollup_M', description: 'Vertical Stand' },
       { label: { ar: 'رول أب عريض (100x200cm)', en: 'Rollup Wide (100x200)' }, value: 'Rollup_L', description: 'Vertical Stand' },
-      { label: { ar: 'بانر جداري (300x100cm)', en: 'Wall Banner (300x100)' }, value: 'Banner_H', description: 'Horizontal' },
-      { label: { ar: 'بانر طريق (400x150cm)', en: 'Road Banner (400x150)' }, value: 'Banner_H', description: 'Horizontal' },
-      { label: { ar: 'بانر واجهة (500x200cm)', en: 'Store Banner (500x200)' }, value: 'Banner_H', description: 'Horizontal' },
+      { label: { ar: 'بانر جداري (300x100cm)', en: 'Wall Banner (300x100)' }, value: 'Banner_H_Wall', description: 'Horizontal' },
+      { label: { ar: 'بانر طريق (400x150cm)', en: 'Road Banner (400x150)' }, value: 'Banner_H_Road', description: 'Horizontal' },
+      { label: { ar: 'بانر واجهة (500x200cm)', en: 'Store Banner (500x200)' }, value: 'Banner_H_Store', description: 'Horizontal' },
       { label: { ar: 'ستاند خلفي (300x240cm)', en: 'Backdrop (300x240)' }, value: 'Backdrop', description: 'Event Backdrop (4:3)' },
     ]
   }
 ];
 
 export const UNIFIED_IMAGE_STYLES = [
-    {
-        label: { ar: 'الأنماط', en: 'Styles' },
-        options: [
-            { label: { ar: 'واقعي', en: 'Photorealistic' }, value: 'Photorealistic' },
-            { label: { ar: 'سينمائي', en: 'Cinematic' }, value: 'Cinematic' },
-            { label: { ar: 'أنمي', en: 'Anime' }, value: 'Anime' },
-            { label: { ar: 'رقمي', en: 'Digital Art' }, value: 'Digital Art' },
-            { label: { ar: 'زيتي', en: 'Oil Painting' }, value: 'Oil Painting' },
-            { label: { ar: 'ثلاثي الأبعاد', en: '3D Render' }, value: '3D Render' }
-        ]
-    }
+  {
+    label: { ar: '🧭 الأنماط العامة', en: '🧭 General Styles' },
+    options: [
+      { label: { ar: 'واقعي', en: 'Realistic' }, value: 'Realistic' },
+      { label: { ar: 'فوتوغرافي احترافي', en: 'Professional Photography' }, value: 'Professional Photography' },
+      { label: { ar: 'سينمائي', en: 'Cinematic' }, value: 'Cinematic' },
+      { label: { ar: 'فني', en: 'Artistic' }, value: 'Artistic' },
+      { label: { ar: 'تجاري / إعلاني', en: 'Commercial / Advertising' }, value: 'Commercial' },
+      { label: { ar: 'ثلاثي الأبعاد', en: '3D Realistic' }, value: '3D Realistic' },
+      { label: { ar: 'كرتوني / أنمي', en: 'Cartoon / Anime Style' }, value: 'Cartoon / Anime Style' },
+      { label: { ar: 'رقمي', en: 'Digital Art' }, value: 'Digital Art' },
+      { label: { ar: 'سكتش / رسم يدوي', en: 'Sketch / Hand Drawing' }, value: 'Sketch / Hand Drawing' },
+      { label: { ar: 'لوحات فنية', en: 'Painting Style' }, value: 'Painting Style' },
+    ]
+  },
+  {
+    label: { ar: '🛍️ أنماط تسويقية وتجارية', en: '🛍️ Marketing & Product Styles' },
+    options: [
+      { label: { ar: 'عرض منتج على خلفية نظيفة', en: 'Product on Clean Background' }, value: 'Product on Clean Background' },
+      { label: { ar: 'عرض منتج في مشهد واقعي', en: 'Product in Real Scene' }, value: 'Product in Real Scene' },
+      { label: { ar: 'تصوير منتجات التجميل والعطور', en: 'Beauty & Perfume Ad' }, value: 'Beauty & Perfume Ad' },
+      { label: { ar: 'تصوير طعام احترافي', en: 'Food Photography' }, value: 'Food Photography' },
+      { label: { ar: 'تصوير أزياء وملابس', en: 'Fashion Photography' }, value: 'Fashion Photography' },
+      { label: { ar: 'تصوير داخلي / ديكور', en: 'Interior Scene' }, value: 'Interior Scene' },
+      { label: { ar: 'تصوير خارجي / بيئة طبيعية', en: 'Outdoor Lifestyle Scene' }, value: 'Outdoor Lifestyle Scene' },
+      { label: { ar: 'واجهة متجر / براند', en: 'Brand Showcase Scene' }, value: 'Brand Showcase Scene' },
+    ]
+  },
+  {
+    label: { ar: '🎬 الأنماط الإبداعية', en: '🎬 Creative Styles' },
+    options: [
+      { label: { ar: 'أسلوب المجلات', en: 'Magazine Editorial Style' }, value: 'Magazine Editorial Style' },
+      { label: { ar: 'إعلان فاخر', en: 'Luxury Ad Style' }, value: 'Luxury Ad Style' },
+      { label: { ar: 'غلاف سينمائي', en: 'Movie Poster Style' }, value: 'Movie Poster Style' },
+      { label: { ar: 'تصوير ليلي', en: 'Night Photography' }, value: 'Night Photography' },
+      { label: { ar: 'إضاءة ذهبية', en: 'Golden Hour Style' }, value: 'Golden Hour Style' },
+      { label: { ar: 'درامي / عاطفي', en: 'Dramatic / Emotional Style' }, value: 'Dramatic / Emotional Style' },
+      { label: { ar: 'مينيمل', en: 'Minimalist Clean Style' }, value: 'Minimalist Clean Style' },
+      { label: { ar: 'بوستر دعائي', en: 'Promotional Poster' }, value: 'Promotional Poster' },
+    ]
+  },
+  {
+    label: { ar: '🌍 الأنماط البيئية والسياقية', en: '🌍 Environmental / Contextual Styles' },
+    options: [
+      { label: { ar: 'مشهد خارجي طبيعي', en: 'Nature / Outdoor Scene' }, value: 'Nature / Outdoor Scene' },
+      { label: { ar: 'مشهد داخلي منزلي', en: 'Indoor / Cozy Scene' }, value: 'Indoor / Cozy Scene' },
+      { label: { ar: 'مشهد مكتبي / عمل', en: 'Office / Workspace Scene' }, value: 'Office / Workspace Scene' },
+      { label: { ar: 'مشهد خيري / إنساني', en: 'Humanitarian / Charity Scene' }, value: 'Humanitarian / Charity Scene' },
+      { label: { ar: 'مشهد طبي / صحي', en: 'Medical Scene' }, value: 'Medical Scene' },
+      { label: { ar: 'مشهد تعليمي', en: 'Educational Scene' }, value: 'Educational Scene' },
+      { label: { ar: 'مشهد مطبخ / مطعم', en: 'Kitchen / Restaurant Scene' }, value: 'Kitchen / Restaurant Scene' },
+      { label: { ar: 'مشهد حضري / شوارع', en: 'Urban Street Scene' }, value: 'Urban Street Scene' },
+    ]
+  },
+  {
+    label: { ar: '💡 أنماط بوستلي الذكية', en: '💡 Postly-AI Enhanced Styles' },
+    options: [
+      { label: { ar: 'أسلوب التصوير الاحترافي', en: 'Professional Photography Style' }, value: 'Professional Photography Style' },
+      { label: { ar: 'تحسين واستعادة الصور', en: 'Image Restoration & Enhancement' }, value: 'Image Restoration & Enhancement' },
+      { label: { ar: 'واقعي بعمق بصري عالي', en: 'High-Depth Realism Mode' }, value: 'High-Depth Realism Mode' },
+      { label: { ar: 'AI Retouch – Light', en: 'AI Retouch – Light' }, value: 'AI Retouch – Light' },
+      { label: { ar: 'AI Retouch – Medium', en: 'AI Retouch – Medium' }, value: 'AI Retouch – Medium' },
+      { label: { ar: 'AI Retouch – Strong', en: 'AI Retouch – Strong' }, value: 'AI Retouch – Strong' },
+      { label: { ar: 'إضاءة ناعمة', en: 'Soft Studio Light' }, value: 'Soft Studio Light' },
+      { label: { ar: 'إضاءة طبيعية', en: 'Natural Window Light' }, value: 'Natural Window Light' },
+      { label: { ar: 'إضاءة إبداعية', en: 'Creative Neon Light' }, value: 'Creative Neon Light' },
+    ]
+  },
+  {
+    label: { ar: '🔲 أنماط التصميم والتركيب', en: '🔲 Design & Composition Styles' },
+    options: [
+      { label: { ar: 'موك أب', en: 'Mockup Scene' }, value: 'Mockup Scene' },
+      { label: { ar: 'بانر / غلاف', en: 'Banner Composition' }, value: 'Banner Composition' },
+      { label: { ar: 'خلفية معزولة', en: 'Isolated Background' }, value: 'Isolated Background' },
+      { label: { ar: 'تركيز على العنصر', en: 'Subject Focus' }, value: 'Subject Focus' },
+      { label: { ar: 'عمق ميداني ضحل', en: 'Shallow Depth of Field' }, value: 'Shallow Depth of Field' },
+      { label: { ar: 'منظور ثلاثي الأبعاد', en: '3D Perspective View' }, value: '3D Perspective View' },
+      { label: { ar: 'عرض جانبي', en: 'Side View' }, value: 'Side View' },
+      { label: { ar: 'عرض علوي', en: 'Top View' }, value: 'Top View' },
+      { label: { ar: 'لقطة قريبة', en: 'Close-up Shot' }, value: 'Close-up Shot' },
+    ]
+  }
 ];
 
 export const CAMERA_ANGLES = [
-// ... existing code ...
     { icon: '📸', label: { ar: 'مستوى العين', en: 'Eye Level' }, value: 'Eye Level' },
     { icon: '🚁', label: { ar: 'من الأعلى', en: 'Overhead' }, value: 'Overhead' },
     { icon: '🐜', label: { ar: 'من الأسفل', en: 'Low Angle' }, value: 'Low Angle' },
@@ -727,7 +791,6 @@ export const CAMERA_ANGLES = [
 ];
 
 export const LIGHTING_STYLES = [
-// ... existing code ...
     { icon: '☀️', label: { ar: 'طبيعي', en: 'Natural' }, value: 'Natural Lighting' },
     { icon: '💡', label: { ar: 'استوديو', en: 'Studio' }, value: 'Studio Lighting' },
     { icon: '🕯️', label: { ar: 'دافئ', en: 'Warm' }, value: 'Warm Lighting' },
@@ -737,45 +800,279 @@ export const LIGHTING_STYLES = [
 ];
 
 export const GRAPHIC_DESIGN_STYLES = [
-// ... existing code ...
-    {
-        label: { ar: 'الأنماط', en: 'Styles' },
-        options: [
-            { label: { ar: 'حديث', en: 'Modern' }, value: 'Modern' },
-            { label: { ar: 'كلاسيكي', en: 'Classic' }, value: 'Classic' },
-            { label: { ar: 'مبسط', en: 'Minimalist' }, value: 'Minimalist' },
-            { label: { ar: 'جريء', en: 'Bold' }, value: 'Bold' },
-            { label: { ar: 'فاخر', en: 'Luxury' }, value: 'Luxury' }
-        ]
-    }
+  {
+    label: { ar: 'أساليب التصميم الفني', en: 'Artistic Design Styles' },
+    options: [
+      { label: { ar: 'البساطة الحديثة', en: 'Minimalism' }, value: 'Minimalism' },
+      { label: { ar: 'التصميم المسطح', en: 'Flat Design' }, value: 'Flat Design' },
+      { label: { ar: 'الواقعية ثلاثية الأبعاد', en: '3D Realistic' }, value: '3D Realistic' },
+      { label: { ar: 'الإيزومتريك', en: 'Isometric' }, value: 'Isometric' },
+      { label: { ar: 'التدرجات اللونية', en: 'Gradient Style' }, value: 'Gradient Style' },
+      { label: { ar: 'أسلوب ممفيس التجريدي', en: 'Memphis Style' }, value: 'Memphis Style' },
+      { label: { ar: 'الهندسية التجريدية', en: 'Abstract Geometry' }, value: 'Abstract Geometry' },
+      { label: { ar: 'الواقعية الخشنة', en: 'Brutalism' }, value: 'Brutalism' },
+      { label: { ar: 'المحاكاة الواقعية', en: 'Skeuomorphism' }, value: 'Skeuomorphism' },
+      { label: { ar: 'الخلل الفني / التشويش البصري', en: 'Glitch Art' }, value: 'Glitch Art' },
+      { label: { ar: 'النوستالجيا الرقمية', en: 'Vaporwave' }, value: 'Vaporwave' },
+      { label: { ar: 'الخيال العلمي المستقبلي', en: 'Cyberpunk' }, value: 'Cyberpunk' },
+      { label: { ar: 'النيون اللامع', en: 'Neon Aesthetic' }, value: 'Neon Aesthetic' },
+      { label: { ar: 'الأسلوب المستقبلي', en: 'Futuristic Style' }, value: 'Futuristic Style' },
+      { label: { ar: 'الطراز القديم', en: 'Vintage' }, value: 'Vintage' },
+      { label: { ar: 'الحنين للثمانينات والتسعينات', en: 'Retro 80s / 90s' }, value: 'Retro 80s / 90s' },
+      { label: { ar: 'الفن الشعبي', en: 'Pop Art' }, value: 'Pop Art' },
+      { label: { ar: 'القص والدمج البصري', en: 'Collage' }, value: 'Collage' },
+      { label: { ar: 'الخطوط البسيطة', en: 'Line Art' }, value: 'Line Art' },
+      { label: { ar: 'الأسلوب اليدوي', en: 'Hand Drawn' }, value: 'Hand Drawn' },
+      { label: { ar: 'الرسم العفوي / الخربشة الفنية', en: 'Doodle Art' }, value: 'Doodle Art' },
+      { label: { ar: 'فن التايبوغرافي', en: 'Typography Art' }, value: 'Typography Art' },
+      { label: { ar: 'السريالية / الأحلام', en: 'Surrealism' }, value: 'Surrealism' },
+      { label: { ar: 'التعبيرية', en: 'Expressionism' }, value: 'Expressionism' },
+      { label: { ar: 'التكعيبية', en: 'Cubism' }, value: 'Cubism' },
+      { label: { ar: 'الانطباعية', en: 'Impressionism' }, value: 'Impressionism' },
+      { label: { ar: 'الفن المفاهيمي', en: 'Conceptual Art' }, value: 'Conceptual Art' },
+      { label: { ar: 'الواقعية الكلاسيكية', en: 'Realism' }, value: 'Realism' },
+      { label: { ar: 'الفن الراقي', en: 'Fine Art Style' }, value: 'Fine Art Style' },
+      { label: { ar: 'الوسائط المتعددة', en: 'Mixed Media' }, value: 'Mixed Media' },
+      { label: { ar: 'ألوان مائية', en: 'Watercolor' }, value: 'Watercolor' },
+      { label: { ar: 'الزيتية الكلاسيكية', en: 'Oil Painting' }, value: 'Oil Painting' },
+      { label: { ar: 'رسم بالقلم الرصاص', en: 'Pencil Sketch' }, value: 'Pencil Sketch' },
+      { label: { ar: 'الفحم الفني', en: 'Charcoal' }, value: 'Charcoal' },
+      { label: { ar: 'الحبر والرسم التوضيحي', en: 'Ink Illustration' }, value: 'Ink Illustration' },
+      { label: { ar: 'الطباشيري / الباستيل', en: 'Chalk / Pastel' }, value: 'Chalk / Pastel' },
+      { label: { ar: 'الواقعية التصويرية', en: 'Photorealism' }, value: 'Photorealism' },
+      { label: { ar: 'الرسم الرقمي', en: 'Digital Painting' }, value: 'Digital Painting' },
+      { label: { ar: 'الرسم السينمائي بالخلفيات', en: 'Matte Painting' }, value: 'Matte Painting' }
+    ]
+  },
+  {
+    label: { ar: 'أساليب الهوية البصرية والتصميم التجاري', en: 'Brand & Visual Identity Styles' },
+    options: [
+      { label: { ar: 'شركات حديثة', en: 'Corporate Modern' }, value: 'Corporate Modern' },
+      { label: { ar: 'الفخامة', en: 'Luxury / Premium' }, value: 'Luxury / Premium' },
+      { label: { ar: 'المجلات والإعلانات', en: 'Editorial / Magazine' }, value: 'Editorial / Magazine' },
+      { label: { ar: 'الأسلوب الحياتي والأزياء', en: 'Lifestyle / Fashion' }, value: 'Lifestyle / Fashion' },
+      { label: { ar: 'البيئة والطبيعة', en: 'Eco / Organic' }, value: 'Eco / Organic' },
+      { label: { ar: 'الصناعي', en: 'Industrial' }, value: 'Industrial' },
+      { label: { ar: 'التقني والرقمي', en: 'Tech / Digital' }, value: 'Tech / Digital' },
+      { label: { ar: 'النقاء والطب', en: 'Medical / Clean' }, value: 'Medical / Clean' },
+      { label: { ar: 'التعليمي', en: 'Educational' }, value: 'Educational' },
+      { label: { ar: 'الإنساني والخيري', en: 'Charity / Humanitarian' }, value: 'Charity / Humanitarian' },
+      { label: { ar: 'العقاري', en: 'Real Estate' }, value: 'Real Estate' },
+      { label: { ar: 'الأطعمة والمشروبات', en: 'Food & Beverage' }, value: 'Food & Beverage' },
+      { label: { ar: 'الجمال والعناية', en: 'Beauty & Wellness' }, value: 'Beauty & Wellness' },
+      { label: { ar: 'الزخرفي الكلاسيكي', en: 'Art Deco' }, value: 'Art Deco' },
+      { label: { ar: 'السكندنافي البسيط', en: 'Scandinavian' }, value: 'Scandinavian' },
+      { label: { ar: 'العربي المعاصر', en: 'Modern Arabic' }, value: 'Modern Arabic' },
+      { label: { ar: 'الهندسة الإسلامية', en: 'Islamic Geometric' }, value: 'Islamic Geometric' },
+      { label: { ar: 'دمج الخط العربي بالفن الحديث', en: 'Calligraphy Fusion' }, value: 'Calligraphy Fusion' },
+      { label: { ar: 'الأسلوب العربي العصري', en: 'Contemporary Arabic' }, value: 'Contemporary Arabic' }
+    ]
+  },
+  {
+    label: { ar: 'أساليب الإخراج والتأثير البصري', en: 'Rendering & Visual Effect Styles' },
+    options: [
+      { label: { ar: 'السينمائي الواقعي', en: 'Cinematic Look' }, value: 'Cinematic Look' },
+      { label: { ar: 'الإضاءة العالية المدى', en: 'HDR Tone' }, value: 'HDR Tone' },
+      { label: { ar: 'ضوء الغروب الدافئ', en: 'Golden Hour' }, value: 'Golden Hour' },
+      { label: { ar: 'الإضاءة الناعمة للبورتريه', en: 'Soft Light Portrait' }, value: 'Soft Light Portrait' },
+      { label: { ar: 'درامي ومزاجي', en: 'Moody / Dramatic' }, value: 'Moody / Dramatic' },
+      { label: { ar: 'إضاءة الاستوديو', en: 'Studio Light' }, value: 'Studio Light' },
+      { label: { ar: 'ضوء طبيعي من النافذة', en: 'Natural Window Light' }, value: 'Natural Window Light' },
+      { label: { ar: 'خلفية ضبابية', en: 'Bokeh Effect' }, value: 'Bokeh Effect' },
+      { label: { ar: 'عمق المجال', en: 'Depth of Field' }, value: 'Depth of Field' },
+      { label: { ar: 'تمويه الحركة', en: 'Motion Blur' }, value: 'Motion Blur' },
+      { label: { ar: 'توهج العدسة', en: 'Lens Flare' }, value: 'Lens Flare' },
+      { label: { ar: 'تحبّب الفيلم القديم', en: 'Vintage Film Grain' }, value: 'Vintage Film Grain' },
+      { label: { ar: 'إضاءة نظيفة مجلات', en: 'Clean Editorial' }, value: 'Clean Editorial' },
+      { label: { ar: 'تباين قوي', en: 'High Contrast' }, value: 'High Contrast' },
+      { label: { ar: 'إضاءة مظلمة أو بيضاء بالكامل', en: 'Low Key / High Key' }, value: 'Low Key / High Key' },
+      { label: { ar: 'واقعية محسّنة بالذكاء الاصطناعي', en: 'AI Stylized Realism' }, value: 'AI Stylized Realism' }
+    ]
+  }
 ];
 
 export const GRAPHIC_DESIGN_SIZES = ASPECT_RATIOS_GROUPED;
 
 export const MOCKUP_TYPES_GROUPED = [
-// ... existing code ...
-    {
-        label: { ar: 'أنواع الموك أب', en: 'Mockup Types' },
-        options: [
-            { label: { ar: 'علبة منتج', en: 'Product Box' }, value: 'Product Box' },
-            { label: { ar: 'شاشة هاتف', en: 'Phone Screen' }, value: 'Phone Screen' },
-            { label: { ar: 'لابتوب', en: 'Laptop Screen' }, value: 'Laptop Screen' },
-            { label: { ar: 'تي شيرت', en: 'T-Shirt' }, value: 'T-Shirt' },
-            { label: { ar: 'كوب', en: 'Mug' }, value: 'Mug' },
-            { label: { ar: 'بطاقة عمل', en: 'Business Card' }, value: 'Business Card' }
-        ]
-    }
+  {
+    label: { ar: '🎨 العلامة التجارية', en: 'Brand Identity 🎨' },
+    options: [
+      { label: { ar: 'كروت شخصية', en: 'Business Cards' }, value: 'Business Cards Mockup' },
+      { label: { ar: 'أوراق رسمية', en: 'Letterhead' }, value: 'Letterhead Mockup' },
+      { label: { ar: 'مظاريف', en: 'Envelopes' }, value: 'Envelopes Mockup' },
+      { label: { ar: 'فولدرات', en: 'Folders' }, value: 'Presentation Folder Mockup' },
+      { label: { ar: 'دفاتر وأغلفة', en: 'Notebooks & Covers' }, value: 'Notebooks & Covers Mockup' },
+      { label: { ar: 'بطاقات دعوة', en: 'Invitation Cards' }, value: 'Invitation Cards Mockup' },
+      { label: { ar: 'أقلام وأكواب وميداليات', en: 'Pens, Mugs, Medals' }, value: 'Pens, Mugs, and Medals Mockup' },
+      { label: { ar: 'بطاقات هوية الموظفين', en: 'ID Cards' }, value: 'Staff ID Cards Mockup' },
+      { label: { ar: 'شنطة هوية كاملة', en: 'Full Identity Bag' }, value: 'Full Identity Kit Mockup' }
+    ]
+  },
+  {
+    label: { ar: '🧴 المنتجات', en: 'Product 🧴' },
+    options: [
+      { label: { ar: 'عبوات بلاستيكية', en: 'Plastic Bottles' }, value: 'Plastic Bottles Mockup' },
+      { label: { ar: 'صناديق كرتونية', en: 'Cardboard Boxes' }, value: 'Cardboard Boxes Mockup' },
+      { label: { ar: 'أكياس ورقية أو بلاستيكية', en: 'Paper/Plastic Bags' }, value: 'Paper or Plastic Bags Mockup' },
+      { label: { ar: 'علب طعام', en: 'Food Containers' }, value: 'Food Containers Mockup' },
+      { label: { ar: 'عبوات عطور', en: 'Perfume Bottles' }, value: 'Perfume Bottles Mockup' },
+      { label: { ar: 'منتجات تجميل', en: 'Cosmetic Products' }, value: 'Cosmetic Products Mockup' },
+      { label: { ar: 'عبوات منظفات', en: 'Detergent Bottles' }, value: 'Detergent Bottles Mockup' },
+      { label: { ar: 'علب دواء', en: 'Medicine Boxes' }, value: 'Medicine Boxes Mockup' },
+      { label: { ar: 'عبوات عصير ومياه', en: 'Juice & Water Bottles' }, value: 'Juice and Water Bottles Mockup' }
+    ]
+  },
+  {
+    label: { ar: '📱 الأجهزة', en: 'Devices 📱' },
+    options: [
+      { label: { ar: 'هواتف ذكية', en: 'Smartphones' }, value: 'Smartphone Screen Mockup' },
+      { label: { ar: 'أجهزة لابتوب', en: 'Laptops' }, value: 'Laptop Screen Mockup' },
+      { label: { ar: 'أجهزة تابلت', en: 'Tablets' }, value: 'Tablet Screen Mockup' },
+      { label: { ar: 'شاشات كمبيوتر', en: 'Desktop Monitors' }, value: 'Desktop Monitor Mockup' },
+      { label: { ar: 'ساعات ذكية', en: 'Smartwatches' }, value: 'Smartwatch Screen Mockup' },
+      { label: { ar: 'شاشات تلفزيون أو عرض', en: 'TV Screens' }, value: 'TV Screen Mockup' },
+      { label: { ar: 'نظارات واقع افتراضي', en: 'VR Headsets' }, value: 'VR Headset Mockup' },
+      { label: { ar: 'مشاهد بشاشات متعددة', en: 'Multi-Screen Scenes' }, value: 'Multi-Device Screen Mockup' }
+    ]
+  },
+  {
+    label: { ar: '📦 الطباعة والإعلانات', en: 'Print & Outdoor 📦' },
+    options: [
+      { label: { ar: 'بوسترات', en: 'Posters' }, value: 'Poster Mockup' },
+      { label: { ar: 'بانرات', en: 'Banners' }, value: 'Banner Mockup' },
+      { label: { ar: 'رول أب', en: 'Roll-ups' }, value: 'Roll-up Banner Mockup' },
+      { label: { ar: 'لوحات طرق', en: 'Billboards' }, value: 'Billboard Mockup' },
+      { label: { ar: 'لوحات محلات', en: 'Store Signs' }, value: 'Store Signage Mockup' },
+      { label: { ar: 'لافتات حائطية', en: 'Wall Signs' }, value: 'Wall Mounted Sign Mockup' },
+      { label: { ar: 'ديكورات معارض', en: 'Exhibition Booths' }, value: 'Exhibition Booth Mockup' },
+      { label: { ar: 'حوائط عرض داخلية', en: 'Indoor Display Walls' }, value: 'Indoor Display Wall Mockup' },
+      { label: { ar: 'واجهات محلات', en: 'Storefronts' }, value: 'Storefront Window Mockup' },
+      { label: { ar: 'سيارات دعائية', en: 'Vehicle Wraps' }, value: 'Vehicle Wrap Mockup' }
+    ]
+  },
+  {
+    label: { ar: '👕 الملابس', en: 'Apparel 👕' },
+    options: [
+      { label: { ar: 'تيشيرتات', en: 'T-Shirts' }, value: 'T-Shirt Mockup' },
+      { label: { ar: 'هوديز', en: 'Hoodies' }, value: 'Hoodie Mockup' },
+      { label: { ar: 'كابات', en: 'Caps' }, value: 'Cap Mockup' },
+      { label: { ar: 'جاكيتات', en: 'Jackets' }, value: 'Jacket Mockup' },
+      { label: { ar: 'شورتات', en: 'Shorts' }, value: 'Shorts Mockup' },
+      { label: { ar: 'شالات أو طرح', en: 'Scarves/Hijabs' }, value: 'Scarf or Hijab Mockup' },
+      { label: { ar: 'أحذية', en: 'Shoes' }, value: 'Shoes Mockup' },
+      { label: { ar: 'أكياس قماش', en: 'Tote Bags' }, value: 'Tote Bag Mockup' },
+      { label: { ar: 'زي موحد', en: 'Uniforms' }, value: 'Uniform Mockup' }
+    ]
+  },
+  {
+    label: { ar: '🖼️ المشاهد الواقعية', en: 'Scene 🖼️' },
+    options: [
+      { label: { ar: 'مكتب عمل', en: 'Office Desk' }, value: 'Office Desk Mockup' },
+      { label: { ar: 'مقهى أو مطعم', en: 'Cafe/Restaurant' }, value: 'Cafe Table Mockup' },
+      { label: { ar: 'منزل أو غرفة', en: 'Home/Room' }, value: 'Home Interior Mockup' },
+      { label: { ar: 'شارع أو واجهة محل', en: 'Street/Storefront' }, value: 'Street Scene Mockup' },
+      { label: { ar: 'خلفية خشبية أو رخامية', en: 'Wood/Marble Background' }, value: 'Wood or Marble Background Mockup' },
+      { label: { ar: 'إضاءة ستوديو', en: 'Studio Lighting' }, value: 'Studio Lighting Mockup' },
+      { label: { ar: 'سطح عاكس', en: 'Reflective Surface' }, value: 'Reflective Surface Mockup' }
+    ]
+  },
+  {
+    label: { ar: '📰 النشر والمحتوى', en: 'Publishing & Media 📰' },
+    options: [
+      { label: { ar: 'مجلات', en: 'Magazines' }, value: 'Magazine Mockup' },
+      { label: { ar: 'كتالوجات', en: 'Catalogs' }, value: 'Catalog Mockup' },
+      { label: { ar: 'بروشورات', en: 'Brochures' }, value: 'Brochure Mockup' },
+      { label: { ar: 'أغلفة كتب', en: 'Book Covers' }, value: 'Book Cover Mockup' },
+      { label: { ar: 'صحف', en: 'Newspapers' }, value: 'Newspaper Mockup' },
+      { label: { ar: 'كتب إلكترونية', en: 'E-Books' }, value: 'E-Book Reader Mockup' },
+      { label: { ar: 'تصاميم سوشيال ميديا', en: 'Social Media Designs' }, value: 'Social Media Post Mockup' },
+      { label: { ar: 'منشورات إنستجرام أو فيسبوك', en: 'Social Posts' }, value: 'Instagram/Facebook Post Mockup' },
+      { label: { ar: 'واجهات فيديوهات أو صور مصغّرة', en: 'Thumbnails' }, value: 'Video Thumbnail Mockup' }
+    ]
+  },
+  {
+    label: { ar: '🧱 المشاريع المعمارية', en: 'Architectural 🧱' },
+    options: [
+      { label: { ar: 'لوحات مشاريع ميدانية', en: 'Site Project Boards' }, value: 'Construction Site Board Mockup' },
+      { label: { ar: 'واجهات مبانٍ', en: 'Building Facades' }, value: 'Building Facade Mockup' },
+      { label: { ar: 'تصاميم ديكور داخلي', en: 'Interior Decor' }, value: 'Interior Decor Mockup' },
+      { label: { ar: 'واجهات متاجر أو مطاعم', en: 'Store Facades' }, value: 'Shop Facade Mockup' },
+      { label: { ar: 'مخططات هندسية', en: 'Blueprints' }, value: 'Blueprint Mockup' },
+      { label: { ar: 'لوحات شركات مقاولات', en: 'Construction Boards' }, value: 'Construction Company Sign Mockup' }
+    ]
+  },
+  {
+    label: { ar: '💡 الإنارة والعرض', en: 'Display & Lighting 💡' },
+    options: [
+      { label: { ar: 'شاشات LED', en: 'LED Screens' }, value: 'LED Screen Mockup' },
+      { label: { ar: 'لوحات نيون', en: 'Neon Signs' }, value: 'Neon Sign Mockup' },
+      { label: { ar: 'حوائط عرض ضوئية', en: 'Light Boxes' }, value: 'Light Box Mockup' },
+      { label: { ar: 'بوسترات ليلية بإضاءة ناعمة', en: 'Night Posters' }, value: 'Night Poster with Soft Lighting Mockup' },
+      { label: { ar: 'إعلانات داخل المولات', en: 'Mall/Airport Ads' }, value: 'Mall or Airport Advertisement Mockup' }
+    ]
+  },
+  {
+    label: { ar: '🌐 الرقمية والسوشيال', en: 'Digital & Social 🌐' },
+    options: [
+      { label: { ar: 'صفحات مواقع إلكترونية', en: 'Website Pages' }, value: 'Website Page Mockup on Screen' },
+      { label: { ar: 'صفحات هبوط', en: 'Landing Pages' }, value: 'Landing Page Mockup' },
+      { label: { ar: 'واجهات تطبيقات', en: 'App Interfaces' }, value: 'Mobile App Interface Mockup' },
+      { label: { ar: 'منشورات وواجهات سوشيال', en: 'Social Interfaces' }, value: 'Social Media Interface Mockup' },
+      { label: { ar: 'لوحات تحكم', en: 'Dashboards' }, value: 'Dashboard Interface Mockup' },
+      { label: { ar: 'واجهات SaaS', en: 'SaaS Interfaces' }, value: 'SaaS Tool Interface Mockup' }
+    ]
+  }
 ];
 
 export const IDEA_TYPES = [
-// ... existing code ...
     {
         label: { ar: 'أنواع الأفكار', en: 'Idea Types' },
         options: [
-            { label: { ar: 'فيرال', en: 'Viral' }, value: 'Viral Content' },
-            { label: { ar: 'تعليمي', en: 'Educational' }, value: 'Educational' },
-            { label: { ar: 'ترويجي', en: 'Promotional' }, value: 'Promotional' },
-            { label: { ar: 'تفاعلي', en: 'Interactive' }, value: 'Interactive' }
+            {
+                label: { ar: 'فـيـرال 🔥', en: 'Viral 🔥' },
+                value: 'Viral',
+                description: { ar: 'أفكار قابلة للانتشار السريع والتفاعل العالي', en: 'High reach and engagement content' }
+            },
+            {
+                label: { ar: 'تعليمي 🎓', en: 'Educational 🎓' },
+                value: 'Educational',
+                description: { ar: 'محتوى يقدّم معلومة أو فائدة للجمهور', en: 'Provides information or value' }
+            },
+            {
+                label: { ar: 'ترويجي 🎯', en: 'Promotional 🎯' },
+                value: 'Promotional',
+                description: { ar: 'يهدف لتسويق منتج أو خدمة بشكل جذّاب', en: 'Markets a product or service' }
+            },
+            {
+                label: { ar: 'تفاعلي 💬', en: 'Interactive 💬' },
+                value: 'Interactive',
+                description: { ar: 'يشجع المتابعين على المشاركة والتفاعل المباشر', en: 'Encourages audience participation' }
+            },
+            {
+                label: { ar: 'قصصي 📖', en: 'Storytelling 📖' },
+                value: 'Storytelling',
+                description: { ar: 'يقدّم الفكرة من خلال قصة أو تجربة واقعية', en: 'Presents ideas through stories' }
+            },
+            {
+                label: { ar: 'توعوي 🕊️', en: 'Awareness 🕊️' },
+                value: 'Awareness',
+                description: { ar: 'يرفع الوعي بقضية أو سلوك إيجابي', en: 'Raises awareness on issues' }
+            },
+            {
+                label: { ar: 'تحفيزي 🚀', en: 'Motivational 🚀' },
+                value: 'Motivational',
+                description: { ar: 'يُلهم الجمهور ويدفعهم لاتخاذ خطوة إيجابية', en: 'Inspires audience to take action' }
+            },
+            {
+                label: { ar: 'إخباري 📰', en: 'News 📰' },
+                value: 'News',
+                description: { ar: 'يعرض أخبارًا أو تحديثات بطريقة مشوقة', en: 'Updates and news in engaging way' }
+            },
+            {
+                label: { ar: 'إنساني ❤️', en: 'Humanitarian ❤️' },
+                value: 'Humanitarian',
+                description: { ar: 'يركّز على القيم والمشاعر الإنسانية والتعاطف', en: 'Focuses on human values and empathy' }
+            }
         ]
     }
 ];
@@ -795,14 +1092,50 @@ export const TEMPLATES_DB = [
     { id: '2', title: { ar: 'إعلان قهوة', en: 'Coffee Ad' }, category: 'Food & Beverage', tags: ['coffee', 'drink'], prompt: 'Cinematic coffee cup on wooden table with steam', icon: '☕' }
 ];
 
-export const VOICE_OPTIONS = [
-// ... existing code ...
-    { id: 'Puck', name: 'Puck', persona: { ar: 'Puck (ذكر - هادئ)', en: 'Puck (Male - Calm)' }, label: { ar: 'مناسب للسرد', en: 'Suitable for narration' }, icon: '👨' },
-    { id: 'Charon', name: 'Charon', persona: { ar: 'Charon (ذكر - عميق)', en: 'Charon (Male - Deep)' }, label: { ar: 'مناسب للوثائقيات', en: 'Suitable for documentaries' }, icon: '👨' },
-    { id: 'Kore', name: 'Kore', persona: { ar: 'Kore (أنثى - هادئة)', en: 'Kore (Female - Calm)' }, label: { ar: 'مناسب للإعلانات', en: 'Suitable for ads' }, icon: '👩' },
-    { id: 'Fenrir', name: 'Fenrir', persona: { ar: 'Fenrir (ذكر - قوي)', en: 'Fenrir (Male - Strong)' }, label: { ar: 'مناسب للحماس', en: 'Suitable for energy' }, icon: '👨' },
-    { id: 'Aoede', name: 'Aoede', persona: { ar: 'Aoede (أنثى - ناعمة)', en: 'Aoede (Female - Soft)' }, label: { ar: 'مناسب للقصص', en: 'Suitable for stories' }, icon: '👩' }
-];
+export const VOICE_LIBRARY = {
+  ar: {
+    male: [
+      { id: 'ar_m_sami', name: 'Sami', label: 'Standard (Fusha)', desc: 'فصحى متزنة', gemini: 'Puck' },
+      { id: 'ar_m_rami', name: 'Rami', label: 'Egyptian', desc: 'مصري، دافئ', gemini: 'Charon' },
+      { id: 'ar_m_fahd', name: 'Fahd', label: 'Gulf', desc: 'خليجي، رزين', gemini: 'Fenrir' },
+      { id: 'ar_m_adam', name: 'Adam', label: 'Levantine', desc: 'شامي، شبابي', gemini: 'Puck' },
+      { id: 'ar_m_younes', name: 'Younes', label: 'Deep Standard', desc: 'فصحى عميقة، وثائقي', gemini: 'Fenrir' },
+    ],
+    female: [
+      { id: 'ar_f_layan', name: 'Layan', label: 'Standard (Fusha)', desc: 'فصحى، ناعمة', gemini: 'Aoede' },
+      { id: 'ar_f_mariam', name: 'Mariam', label: 'Egyptian', desc: 'مصرية، حيوية', gemini: 'Kore' },
+      { id: 'ar_f_reem', name: 'Reem', label: 'Gulf', desc: 'خليجية، هادئة', gemini: 'Aoede' },
+      { id: 'ar_f_sarah', name: 'Sarah', label: 'Levantine', desc: 'شامية، لطيفة', gemini: 'Kore' },
+      { id: 'ar_f_nada', name: 'Nada', label: 'Standard', desc: 'فصحى، إخبارية', gemini: 'Kore' },
+    ],
+    kids: [
+      { id: 'ar_k_hamza', name: 'Hamza', label: 'Boy 8y', desc: 'طبيعي ومرح', gemini: 'Puck' },
+      { id: 'ar_k_anas', name: 'Anas', label: 'Boy 6y', desc: 'بريء وناعم', gemini: 'Aoede' },
+      { id: 'ar_k_joud', name: 'Joud', label: 'Girl 9y', desc: 'مرحة وحيوية', gemini: 'Kore' },
+      { id: 'ar_k_laila', name: 'Laila', label: 'Girl 7y', desc: 'هادئة', gemini: 'Aoede' },
+    ]
+  },
+  en: {
+    male: [
+      { id: 'en_m_ethan', name: 'Ethan', label: 'US', desc: 'Friendly, Casual', gemini: 'Puck' },
+      { id: 'en_m_liam', name: 'Liam', label: 'UK', desc: 'Professional, Deep', gemini: 'Fenrir' },
+      { id: 'en_m_noah', name: 'Noah', label: 'US', desc: 'Calm, Narration', gemini: 'Charon' },
+      { id: 'en_m_owen', name: 'Owen', label: 'AU', desc: 'Energetic', gemini: 'Puck' },
+    ],
+    female: [
+      { id: 'en_f_ava', name: 'Ava', label: 'US', desc: 'Soft, Storytelling', gemini: 'Aoede' },
+      { id: 'en_f_emma', name: 'Emma', label: 'UK', desc: 'Polite, Formal', gemini: 'Kore' },
+      { id: 'en_f_sophia', name: 'Sophia', label: 'US', desc: 'Dynamic, News', gemini: 'Kore' },
+      { id: 'en_f_isla', name: 'Isla', label: 'AU', desc: 'Friendly', gemini: 'Aoede' },
+    ],
+    kids: [
+      { id: 'en_k_lucas', name: 'Lucas', label: 'Boy 8', desc: 'Energetic', gemini: 'Puck' },
+      { id: 'en_k_max', name: 'Max', label: 'Boy 9', desc: 'Curious', gemini: 'Puck' },
+      { id: 'en_k_ella', name: 'Ella', label: 'Girl 7', desc: 'Sweet', gemini: 'Aoede' },
+      { id: 'en_k_chloe', name: 'Chloe', label: 'Girl 6', desc: 'Playful', gemini: 'Kore' },
+    ]
+  }
+};
 
 export const INFOGRAPHIC_LAYOUTS = [
     { icon: '📊', label: { ar: 'قائمة', en: 'List' }, value: 'List' },
@@ -819,7 +1152,6 @@ export const INFOGRAPHIC_STYLES = [
 ];
 
 export const PRODUCT_SCENES_GROUPED = [
-// ... existing code ...
   { 
     label: { ar: '🏠 مشاهد داخلية', en: '🏠 Indoor Scenes' }, 
     options: [

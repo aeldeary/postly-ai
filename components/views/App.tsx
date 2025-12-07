@@ -1,33 +1,32 @@
-
 import React, { useState, useCallback, useEffect, ErrorInfo, ReactNode } from 'react';
-import { Tab, ProjectContextState, AppLanguage, Theme } from './types';
-import Sidebar from './components/Sidebar';
-import HomeView from './components/views/HomeView';
-import CreatePostView from './components/views/CreatePostView';
-import WebsiteContentView from './components/views/WebsiteContentView';
-import AIImagesView from './components/views/AIImagesView';
-import ProfessionalProductView from './components/views/ProfessionalProductView';
-import PostlySpacesView from './components/views/PostlySpacesView';
-import CreateVideoView from './components/views/CreateVideoView';
-import CreateAudioView from './components/views/CreateAudioView'; 
-import StyleTrainingView from './components/views/StyleTrainingView';
-import ArchiveView from './components/views/ArchiveView';
-import BrandKitView from './components/views/BrandKitView';
-import IdeaGeneratorView from './components/views/IdeaGeneratorView'; 
-import ChatBotView from './components/views/ChatBotView'; 
-import InstantSummaryView from './components/views/InstantSummaryView';
-import SettingsView from './components/views/SettingsView';
-import AboutView from './components/views/AboutView';
-import InitialSetupView from './components/views/InitialSetupView';
-import GraphicDesignerView from './components/views/GraphicDesignerView';
-import InfographicDesignerView from './components/views/InfographicDesignerView';
-import AdvancedTemplatesView from './components/views/AdvancedTemplatesView';
-import { ProjectContext } from './contexts/ProjectContext';
-import { getItem, setItem } from './utils/localStorage';
-import { ARCHIVE_STORAGE_KEY } from './constants';
-import ProjectChoicePrompt from './components/ProjectChoicePrompt';
-import { ChatBubbleIcon, SunIcon, MoonIcon, CoffeeIcon } from './components/Icons';
-import ToastContainer, { ToastMessage, ToastType } from './components/Toast';
+import { Tab, ProjectContextState, AppLanguage, Theme } from '../../types';
+import Sidebar from '../Sidebar';
+import HomeView from './HomeView';
+import CreatePostView from './CreatePostView';
+import WebsiteContentView from './WebsiteContentView';
+import AIImagesView from './AIImagesView';
+import ProfessionalProductView from './ProfessionalProductView';
+import PostlySpacesView from './PostlySpacesView';
+import CreateVideoView from './CreateVideoView';
+import CreateAudioView from './CreateAudioView'; 
+import StyleTrainingView from './StyleTrainingView';
+import ArchiveView from './ArchiveView';
+import BrandKitView from './BrandKitView';
+import IdeaGeneratorView from './IdeaGeneratorView'; 
+import ChatBotView from './ChatBotView'; 
+import InstantSummaryView from './InstantSummaryView';
+import SettingsView from './SettingsView';
+import AboutView from './AboutView';
+import InitialSetupView from './InitialSetupView';
+import GraphicDesignerView from './GraphicDesignerView';
+import InfographicDesignerView from './InfographicDesignerView';
+import AdvancedTemplatesView from './AdvancedTemplatesView';
+import { ProjectContext } from '../../contexts/ProjectContext';
+import { getItem, setItem } from '../../utils/localStorage';
+import { ARCHIVE_STORAGE_KEY } from '../../constants';
+import ProjectChoicePrompt from '../ProjectChoicePrompt';
+import { ChatBubbleIcon, SunIcon, MoonIcon, CoffeeIcon } from '../Icons';
+import ToastContainer, { ToastMessage, ToastType } from '../Toast';
 
 interface ErrorBoundaryProps {
   children?: ReactNode;
@@ -39,13 +38,10 @@ interface ErrorBoundaryState {
 }
 
 class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  constructor(props: ErrorBoundaryProps) {
-    super(props);
-    this.state = {
-      hasError: false,
-      error: null
-    };
-  }
+  state: ErrorBoundaryState = {
+    hasError: false,
+    error: null
+  };
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
     return { hasError: true, error };
