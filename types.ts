@@ -17,7 +17,8 @@ export enum Tab {
   About = 'About',
   GraphicDesigner = 'Graphic Designer',
   InfographicDesigner = 'Infographic Designer',
-  Templates = 'Templates'
+  Templates = 'Templates',
+  ContentCalendar = 'Content Calendar'
 }
 
 export type AppLanguage = 'ar' | 'en';
