@@ -1,5 +1,7 @@
 
 import { ARCHIVE_STORAGE_KEY } from '../constants';
+import { auth, saveArchiveToFirestore } from '../services/firebase';
+import { ArchivedItem } from '../types';
 
 const MAX_STORAGE_BYTES = 4.5 * 1024 * 1024; // 4.5MB to be safe
 
@@ -22,6 +24,13 @@ export function setItem<T>(key: string, value: T): void {
     }
 
     localStorage.setItem(key, serializedValue);
+
+    // Sync archive to Firestore if user is signed in
+    if (key === ARCHIVE_STORAGE_KEY && auth.currentUser) {
+      const items = JSON.parse(serializedValue) as ArchivedItem[];
+      saveArchiveToFirestore(auth.currentUser.uid, items).catch(console.error);
+    }
+
   } catch (error) {
     if (error instanceof DOMException && (error.name === 'QuotaExceededError' || error.code === 22)) {
         console.error(`Quota exceeded for key ${key}. Could not save item.`, error);

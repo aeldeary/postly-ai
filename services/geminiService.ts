@@ -1,13 +1,16 @@
 import { GoogleGenAI, Type, Schema, Modality, GenerateContentResponse, GenerateContentParameters } from "@google/genai";
-import { 
-  PostGeneration, ReelResponse, AdGeneration, 
-  WebsiteGeneration, BrandKit, CreativeIdea, ChatMessage 
+import {
+  PostGeneration, ReelResponse, AdGeneration,
+  WebsiteGeneration, BrandKit, CreativeIdea, ChatMessage
 } from "../types";
+import { getStoredApiKey } from "../utils/apiKey";
 
-// Helper to get a fresh client instance. 
-// This ensures that if the API_KEY environment variable changes (or if we implement key switching),
-// we always use the current one.
-const getClient = () => new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Always read from localStorage so the key is never baked into the bundle.
+const getClient = () => {
+  const apiKey = getStoredApiKey() || process.env.API_KEY || '';
+  if (!apiKey) throw new Error('API_KEY_MISSING');
+  return new GoogleGenAI({ apiKey });
+};
 
 // Improved JSON Cleaner
 const cleanJson = (text: string): string => {

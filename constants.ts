@@ -36,7 +36,8 @@ export const UI_TRANSLATIONS = {
   rolePalette: { ar: 'لوحة الألوان', en: 'Color Palette' },
   roleLighting: { ar: 'الإضاءة', en: 'Lighting Reference' },
   blenderDescPlaceholder: { ar: 'صف المشهد النهائي الذي تريده...', en: 'Describe the final scene you want...' },
-  synthesizeImage: { ar: 'توليد الصورة المدمجة', en: 'Synthesize Blended Image' }
+  synthesizeImage: { ar: 'توليد الصورة المدمجة', en: 'Synthesize Blended Image' },
+  contentCalendar: { ar: 'تقويم المحتوى', en: 'Content Calendar' }
 };
 
 export const LANGUAGES_GROUPED = [
