@@ -6,6 +6,7 @@ import react from '@vitejs/plugin-react'
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, (process as any).cwd(), '');
   return {
+    base: '/postly-ai/',
     plugins: [react()],
     define: {
       // If API_KEY is not set, default to empty string to prevent build errors or runtime crashes
