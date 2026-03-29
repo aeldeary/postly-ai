@@ -23,6 +23,8 @@ import InfographicDesignerView from './InfographicDesignerView';
 import AdvancedTemplatesView from './AdvancedTemplatesView';
 import ContentCalendarView from './ContentCalendarView';
 import { ProjectContext } from '../../contexts/ProjectContext';
+import { AuthProvider, useAuth } from '../../contexts/AuthContext';
+import AuthBar from '../AuthBar';
 import { getItem, setItem } from '../../utils/localStorage';
 import { ARCHIVE_STORAGE_KEY } from '../../constants';
 import ProjectChoicePrompt from '../ProjectChoicePrompt';
@@ -249,6 +251,7 @@ const App: React.FC = () => {
 
   return (
     <ErrorBoundary>
+      <AuthProvider>
       <ProjectContext.Provider value={{ ...projectState, updateProjectState }}>
         <div className={`flex h-[100dvh] font-[Tajawal] transition-colors duration-500 ${baseClasses}`} dir={dir}>
 
@@ -323,6 +326,7 @@ const App: React.FC = () => {
 
                   {/* Right Controls */}
                   <div className="flex items-center gap-2">
+                    <AuthBar />
                     {/* Mobile Search */}
                     <button
                       onClick={() => setIsSearchOpen(true)}
@@ -475,6 +479,7 @@ const App: React.FC = () => {
           )}
         </div>
       </ProjectContext.Provider>
+      </AuthProvider>
     </ErrorBoundary>
   );
 };
