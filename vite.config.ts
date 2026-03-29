@@ -10,7 +10,7 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     define: {
       // If API_KEY is not set, default to empty string to prevent build errors or runtime crashes
-      'process.env.API_KEY': JSON.stringify(env.API_KEY || '')
+      'process.env.API_KEY': JSON.stringify(env.API_KEY || 'AIzaSyBbcDdrIozCMm6nLhzqzVNLu7iXzS6F_2A')
     }
   }
 })
