@@ -9,8 +9,8 @@ export default defineConfig(({ mode }) => {
     base: '/postly-ai/',
     plugins: [react()],
     define: {
-      // If API_KEY is not set, default to empty string to prevent build errors or runtime crashes
-      'process.env.API_KEY': JSON.stringify(env.API_KEY || 'AIzaSyDnFVvpT3UV8cIEtRomOv1-X-PB0NaFQsM')
+      // API key is loaded from localStorage at runtime - never hardcoded
+      'process.env.API_KEY': JSON.stringify(env.API_KEY || '')
     }
   }
 })

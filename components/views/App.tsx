@@ -1,5 +1,7 @@
 import React, { useState, useCallback, useEffect, ErrorInfo, ReactNode } from 'react';
 import { Tab, ProjectContextState, AppLanguage, Theme } from '../../types';
+import { hasStoredApiKey } from '../../utils/apiKey';
+import ApiKeySetupModal from '../ApiKeySetupModal';
 import Sidebar from '../Sidebar';
 import HomeView from './HomeView';
 import CreatePostView from './CreatePostView';
@@ -85,6 +87,7 @@ const App: React.FC = () => {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const [showApiKeyModal, setShowApiKeyModal] = useState(() => !hasStoredApiKey());
 
   const addToast = useCallback((message: string, type: ToastType = 'info') => {
     const id = Date.now().toString();
@@ -258,6 +261,13 @@ const App: React.FC = () => {
           {/* Dark mode texture */}
           {appliedTheme === 'dark' && (
             <div className="fixed inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-5 pointer-events-none mix-blend-overlay" />
+          )}
+
+          {showApiKeyModal && (
+            <ApiKeySetupModal
+              onSave={() => setShowApiKeyModal(false)}
+              isAr={projectState.appLanguage === 'ar'}
+            />
           )}
 
           {!isSetupComplete ? (
